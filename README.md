@@ -2,7 +2,7 @@
 
 A question can have a well-supported answer even when several attempts to solve it disagree. This architecture generates candidate answers in two ways: a reader answers directly from retrieved passages, and a planner breaks the question into hops that the reader solves in sequence. Two additional chains can draw on a memory of successful plans. Each chain leaves an evidence trace that a small model uses to estimate how much support to give its answer.
 
-![On-demand inference. A direct reader and a fixed-example chain answer the same question. If their answers match, return the shared answer. If they differ, run two memory-guided chains and return the answer group with the highest pooled support.](docs/images/on-demand-inference.svg)
+![Figure 2. On a HotpotQA question, a two-hop chain quotes evidence for Gabriella Montez. Two memory-guided chains and the direct reader support that answer, giving it a pooled support of 0.998.](docs/images/fig2-overview.png)
 
 ## Following a chain of evidence
 
