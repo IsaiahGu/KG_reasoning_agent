@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="510" viewBox="0 0 800 510"
+     role="img" aria-labelledby="title description">
+  <title id="title">On-demand inference</title>
+  <desc id="description">A question goes to a direct reader and a fixed-example reasoning chain.
+    Matching answers end the search. When the answers differ, two additional chains use successful
+    plans from memory. The system groups matching answers from all four paths and returns the
+    answer with the highest pooled support.</desc>
+  <style>
+    svg {
+      --paper: #f8fafc; --card: #ffffff; --border: #becbd5; --wire: #607483;
+      --ink: #172d3b; --muted: #415a69; --inverse: #ffffff;
+      --decision: #273e4b; --green: #146246; --mint: #ecf6f0;
+      --blue: #244d80; --ice: #ecf3fc;
+      font-family: "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --paper: #141d25; --card: #1c2933; --border: #536675; --wire: #a7bac7;
+        --ink: #eff5fa; --muted: #c0ced8; --inverse: #10222e;
+        --decision: #dbe8ee; --green: #a0debb; --mint: #1b342b;
+        --blue: #b1d1ff; --ice: #202f45;
+      }
+    }
+    .wire { fill: none; stroke: var(--wire); stroke-width: 2; stroke-linejoin: round; }
+    .card { fill: var(--card); stroke: var(--border); stroke-width: 1.5; }
+    .heading { fill: var(--ink); font-size: 22px; font-weight: 650; }
+    .body { fill: var(--muted); font-size: 17px; }
+    .branch { font-size: 16px; font-weight: 700; }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5" markerHeight="5" orient="auto">
+      <path d="M0 0 8 4 0 8Z" fill="var(--wire)"/>
+    </marker>
+  </defs>
+
+  <rect x="1" y="1" width="798" height="508" rx="14" fill="var(--paper)" stroke="var(--border)"/>
+
+  <!-- Both initial paths receive the original question. -->
+  <rect class="card" x="322" y="17" width="156" height="40" rx="20"/>
+  <text class="heading" x="400" y="45" text-anchor="middle">Question</text>
+  <g class="wire">
+    <path d="M400 57V71"/>
+    <path d="M400 71H204V90" marker-end="url(#arrow)"/>
+    <path d="M400 71H596V90" marker-end="url(#arrow)"/>
+  </g>
+
+  <rect class="card" x="24" y="95" width="360" height="100" rx="10"/>
+  <text class="heading" x="44" y="125">Direct reader</text>
+  <text class="body" x="44" y="152">Retrieve five passages for the question.</text>
+  <text class="body" x="44" y="176">Read them to produce an answer.</text>
+
+  <rect class="card" x="416" y="95" width="360" height="100" rx="10"/>
+  <text class="heading" x="436" y="125">Fixed-example chain</text>
+  <text class="body" x="436" y="152">Retrieve passages for each planned hop.</text>
+  <text class="body" x="436" y="176">Bind each answer to a supporting quote.</text>
+
+  <g class="wire">
+    <path d="M204 195V211H596V195"/>
+    <path d="M400 211V227" marker-end="url(#arrow)"/>
+  </g>
+  <rect x="244" y="232" width="312" height="44" rx="22" fill="var(--decision)"/>
+  <text x="400" y="261" text-anchor="middle" fill="var(--inverse)" font-size="21" font-weight="650">Do the two answers match?</text>
+  <g class="wire">
+    <path d="M400 276V293"/>
+    <path d="M400 293H204V312" marker-end="url(#arrow)"/>
+    <path d="M400 293H596V312" marker-end="url(#arrow)"/>
+  </g>
+
+  <rect x="24" y="317" width="360" height="167" rx="10" fill="var(--mint)" stroke="var(--green)"/>
+  <text class="branch" x="44" y="348" fill="var(--green)">Yes</text>
+  <text class="heading" x="44" y="382">Return the shared answer</text>
+  <text class="body" x="44" y="412">Stop after the first two paths.</text>
+
+  <rect x="416" y="317" width="360" height="167" rx="10" fill="var(--ice)" stroke="var(--blue)"/>
+  <text class="branch" x="436" y="348" fill="var(--blue)">No</text>
+  <text class="heading" x="436" y="382">Run two more chains</text>
+  <text class="body" x="436" y="412">Use plans from memory. Pool reliability</text>
+  <text class="body" x="436" y="436">across matching answers from all four</text>
+  <text class="body" x="436" y="460">paths. Return the best-supported answer.</text>
+</svg>

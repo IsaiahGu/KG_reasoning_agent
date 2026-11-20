@@ -2,17 +2,7 @@
 
 A question can have a well-supported answer even when several attempts to solve it disagree. This architecture generates candidate answers in two ways: a reader answers directly from retrieved passages, and a planner breaks the question into hops that the reader solves in sequence. Two additional chains can draw on a memory of successful plans. Each chain leaves an evidence trace that a small model uses to estimate how much support to give its answer.
 
-```mermaid
-flowchart TD
-    Q[Question] --> D[Retrieve passages and read directly]
-    Q --> C[Plan and execute a chain of hops]
-    D --> G{Do the answers agree?}
-    C --> G
-    G -->|Yes| A[Return shared answer]
-    G -->|No| M[Run two memory-guided chains]
-    M --> S[Group answers from all four paths and score each group]
-    S --> R[Return the best-supported answer]
-```
+![On-demand inference. A direct reader and a fixed-example chain answer the same question. If their answers match, return the shared answer. If they differ, run two memory-guided chains and return the answer group with the highest pooled support.](docs/images/on-demand-inference.svg)
 
 ## Following a chain of evidence
 
