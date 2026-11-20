@@ -1,0 +1,15 @@
+/*
+!/.gitignore
+!/README.md
+!/src/
+!/scripts/
+!/probe/
+!/tests/
+!/configs/
+!/preparation/
+/preparation/*
+!/preparation/*.py
+!/preparation/*.sh
+__pycache__/
+*.py[cod]
+.pytest_cache/

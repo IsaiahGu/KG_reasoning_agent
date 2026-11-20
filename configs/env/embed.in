@@ -1,0 +1,14 @@
+# Python 3.12; torch from https://download.pytorch.org/whl/cu124
+torch==2.5.1
+transformers==4.45.2
+numpy==1.26.4
+pyarrow==17.0.0
+datasets==2.21.0
+accelerate==0.34.2
+einops==0.8.0
+sentence-transformers==2.7.0
+fastapi==0.115.6
+uvicorn==0.34.0
+# Also install the downloaded HippoRAG/requirements.txt, then install that
+# checkout editable with --no-deps. Full normal `import hipporag` is checked;
+# provider packages are installed but P0 does not call any LLM or OpenIE API.

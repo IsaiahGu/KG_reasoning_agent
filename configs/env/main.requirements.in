@@ -1,0 +1,14 @@
+gliner==0.2.29
+transformers==4.57.6
+accelerate
+pyarrow
+pytest
+fastapi
+uvicorn
+httpx
+jsonschema
+sentencepiece==0.2.1
+protobuf==5.29.6
+safetensors
+requests
+psutil

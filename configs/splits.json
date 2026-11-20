@@ -1,0 +1,11 @@
+{
+  "seed": 42,
+  "sizes": {"dev-A": 500, "dev-B": 500, "train-S": 2000},
+  "output_dir": "data/splits/seed42",
+  "minimum_free_gib": 15,
+  "training_source_filters": {"hotpotqa": {"level": "hard"}},
+  "stratification": {"musique": "id hop prefix", "2wikimultihopqa": "type", "hotpotqa": "type"},
+  "dev_corpus": "union of dev-A and dev-B candidate passages; exact (title, text) deduplication",
+  "train-S_corpus": "separate union of train-S candidates; no insertion into dev corpus",
+  "graph_rag_bench": {"development_fraction": 0.25, "stratification": ["domain", "question_type"], "prepared_at_p0": false}
+}
