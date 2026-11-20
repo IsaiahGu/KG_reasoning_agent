@@ -9,7 +9,7 @@ from huggingface_hub import HfApi, hf_hub_download
 authenticate()
 api = HfApi(token=os.environ['HF_TOKEN'])
 results = []
-for repo in ['microsoft/deberta-v3-large', 'nvidia/NV-Embed-v2']:
+for repo in ['nvidia/NV-Embed-v2']:
     info = api.model_info(repo, files_metadata=True)
     files = []
     for item in info.siblings:
@@ -27,9 +27,6 @@ for repo in ['microsoft/deberta-v3-large', 'nvidia/NV-Embed-v2']:
         if cached.stat().st_size != item.size:
             raise RuntimeError('Dependency size mismatch')
         files.append({'path': name, 'size': item.size, 'sha256': digest, 'cached_path': str(cached)})
-        if repo == 'microsoft/deberta-v3-large':
-            local = Path(hf_hub_download(repo, name, revision=info.sha, token=os.environ['HF_TOKEN'],
-                         local_dir=ROOT / 'models' / repo))
     # Populate refs/main so hardcoded upstream tokenizer repo IDs also work offline.
     ref = Path(os.environ['HF_HOME']) / 'hub' / ('models--' + repo.replace('/', '--')) / 'refs/main'
     ref.parent.mkdir(parents=True, exist_ok=True)

@@ -8,7 +8,6 @@ export UV_CONCURRENT_DOWNLOADS=4
 export UV_CONCURRENT_INSTALLS=2
 uv venv --allow-existing --python /venv/main/bin/python --system-site-packages "$ROOT/envs/main"
 cat > "$ROOT/configs/env/main.requirements.in" <<'EOF'
-gliner==0.2.29
 transformers==4.57.6
 accelerate
 pyarrow
@@ -26,7 +25,7 @@ EOF
 "$ROOT/envs/main/bin/python" -m pip install --no-cache-dir -r "$ROOT/configs/env/main.requirements.in"
 "$ROOT/envs/main/bin/python" -m pip freeze --all > "$ROOT/configs/env/main.lock"
 "$ROOT/envs/main/bin/python" - <<'PY'
-import sys, torch, transformers, gliner, pyarrow
+import sys, torch, transformers, pyarrow
 import json
 from pathlib import Path
 record = {'environment': 'main', 'python': sys.version, 'torch': torch.__version__,

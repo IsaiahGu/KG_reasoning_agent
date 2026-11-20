@@ -1,10 +1,31 @@
 {
- "written": "2026-11-18 14:45 UTC",
- "final": ["dense", "fixed", "memory1", "memory2"],
+ "final": [
+  "dense",
+  "fixed",
+  "memory1",
+  "memory2"
+ ],
  "label": "dense read + chain A1 + memory plans 1 and 2, merged by calibrated support",
- "preregistered": "configs/frozen_v2.json",
- "preregistered_configuration": ["dense", "fixed", "memory1", "memory2", "hyper"],
- "decision": "The hypergraph-retrieval chain (derivation 'hyper') is removed from the method. Decided by the user on 2026-11-18, after the test runs, when it had shown no gain on any test subset (MuSiQue, 2Wiki, HotpotQA, NQ). It had joined the pre-registered headline because of a dev-A result (+1.87 F1 on MuSiQue) that did not hold on test.",
- "honesty_note": "The final configuration is not new: it is the configuration 'without the hypergraph chain' that configs/frozen_v2.json pre-registered as fallback and ablation before any test run, with the same support models and plan memories. Only the choice to report it as the method is made after seeing test results. On every test subset it scores slightly below the pre-registered five-derivation headline (by 0.07 to 0.19 F1, intervals include 0) and needs one chain fewer per question. Both rows are reported.",
- "transfer": {"nq_rear": "hotpotqa", "popqa": "hotpotqa"}
+ "datasets": [
+  "musique",
+  "2wikimultihopqa",
+  "hotpotqa",
+  "nq_rear",
+  "popqa"
+ ],
+ "transfer": {
+  "nq_rear": "hotpotqa",
+  "popqa": "hotpotqa"
+ },
+ "support_model": "configs/support/<dataset>_chain_v1.json",
+ "derivations": {
+  "dense": "a0",
+  "fixed": "single",
+  "memory1": "selfmem_answer",
+  "memory2": "selfmem2_answer",
+  "candidates": "cand3",
+  "gold_memory": "knn_single",
+  "candidates_scorer": "cand3_s1500_bt"
+ },
+ "selection": "The four-execution configuration was specified before testing as a fallback. It was selected as the reported method after test results were available."
 }

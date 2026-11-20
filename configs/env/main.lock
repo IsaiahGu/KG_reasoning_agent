@@ -16,7 +16,6 @@ executing==2.3.0
 fastapi==0.163.1
 filelock==4.2.10
 fsspec==2026.9.0
-gliner==0.2.29
 h11==0.16.0
 hf-xet==1.8.0
 httpcore==1.0.9

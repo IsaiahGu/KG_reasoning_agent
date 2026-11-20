@@ -91,9 +91,9 @@ def main():
     parser.add_argument('--base-url', default='http://127.0.0.1:18080/v1')
     parser.add_argument('--dry-run', action='store_true', help='print the first prompts and the number of calls needed; no LLM call')
     arguments = parser.parse_args()
-    frozen = json.loads((ROOT / 'configs/frozen_v2.json').read_text())
-    final = json.loads((ROOT / 'configs/final.json').read_text())['final']
-    runs = {name: load(arguments.split, arguments.dataset, frozen['derivations'][name]) for name in final}
+    config = json.loads((ROOT / 'configs/final.json').read_text())
+    final = config['final']
+    runs = {name: load(arguments.split, arguments.dataset, config['derivations'][name]) for name in final}
     keys = sorted(set.intersection(*[set(scored) & set(records) for scored, records in runs.values()]))
     keys = keys[:arguments.limit] if arguments.limit else keys
     fallback = 'fixed' if 'fixed' in final else final[0]

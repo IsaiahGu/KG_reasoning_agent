@@ -6,8 +6,7 @@ For every wrong answer (F1 below 0.5) of run <tag>, the root is the earliest gol
 dependency order) whose gold answer is not among the answers the chain bound. The root is then one of
   retrieval miss      the supporting passage of the root hop was never retrieved, although every hop before it was bound
   passage not bound   the supporting passage was retrieved at some hop, but its answer was not bound
-For retrieval misses the script also says whether the supporting passage mentions an entity the chain had already bound
-(the case an entity-anchored hypergraph lookup could reach), and whether the other runs retrieved that passage.
+For retrieval misses the script also says whether the supporting passage mentions an entity the chain had already bound, and whether the other runs retrieved that passage.
 Nothing is fitted or tuned here.
 """
 import collections

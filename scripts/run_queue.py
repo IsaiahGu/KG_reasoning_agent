@@ -550,7 +550,7 @@ class Runner:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', type=Path, default=ROOT)
-    parser.add_argument('--queue', type=Path, default=ROOT / 'configs/queue_v1.json')
+    parser.add_argument('--queue', type=Path, default=ROOT / 'configs/queue_v2.json')
     parser.add_argument('--state-dir', type=Path, default=ROOT / 'runs/queue')
     arguments = parser.parse_args()
     arguments.state_dir.mkdir(parents=True, exist_ok=True)

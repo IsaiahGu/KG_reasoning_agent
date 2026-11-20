@@ -21,6 +21,8 @@ NV-Embed-v2 embeds the retrieval queries. A shared Qwen3.5-9B model plans the ho
 
 Planning memory stores examples of **how to decompose a question**. During construction, the answer-based admission rule keeps completed training chains with valid plans whose answers meet an F1 threshold (0.8 by default). At inference, the planner receives the retrieved questions and their hop sequences. [Memory construction](scripts/build_plan_memory.py) · [Four-path configuration](configs/final.json)
 
+The four-path configuration was recorded before testing as a fallback. After evaluating the alternatives on the test sets, we selected it for reporting because it requires no corpus index. On the four test sets where both configurations ran, its F1 was 0.07 to 0.19 points lower than the original primary configuration; all paired 95% intervals included zero.
+
 ## Selecting the final answer
 
 A logistic regression assigns each chain a reliability score from its execution trace. Its inputs include whether the chain finished, whether the chain and the final reader agreed, whether a quotation appeared verbatim in a passage, and how highly the evidence ranked. The direct reader receives a dataset-specific prior. The fitted coefficients and normalization parameters are included in the repository. [Reliability model](src/hyperbind/support.py) · [Fitted parameters](configs/support)

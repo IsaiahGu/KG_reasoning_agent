@@ -7,7 +7,7 @@ Run after scripts/paper_results.py: this script reads paper/results.json and the
   A*.csv           appendix
   cases.jsonl      case studies picked by fixed rules, with every execution's steps and quotes
   prompts.md       every prompt of the method and of the added control
-  config/          frozen configurations, fitted reliability models, hop scorer, implementation details
+  config/          reported configuration, fitted reliability models, hop scorer, implementation details
 Development (dev-A) and test rows sit in the same files and carry a split column. F1 and EM are in percent; intervals are
 95% bootstrap intervals over questions (10,000 resamples, the resamples of scripts/paper_results.py).
 """
@@ -39,37 +39,28 @@ HEAD = ['n', 'f1', 'f1_lo', 'f1_hi', 'em', 'llm_calls_per_question', 'tokens_per
 FILES = []
 # Where each file is used, in the numbering of paper/OUTLINE.md (second draft). The T/F/A prefixes only name the files.
 FEEDS = {'T1_main_results.csv': '表 1 主结果；图 1 首页小图', 'T2_merge_rules.csv': '表 2 合并规则',
-         'T3_diversity_source.csv': '表 4 执行的来源', 'F2_f1_vs_executions.csv': '图 3 F1 随执行次数变化',
-         'F3_calibration_bins.csv': '图 5 校准图', 'F3_calibration_summary.csv': '图 5 的图注，表 5 的校准数字',
-         'F4_cost_accuracy.csv': '图 4 成本和准确率', 'T4a_reliability_features.csv': '表 5 可靠度模型：特征',
-         'T4b_reliability_training_size.csv': '表 5 可靠度模型：训练量', 'T4c_reliability_transfer.csv': '表 5 可靠度模型：跨数据集',
-         'T4d_reliability_weights.csv': '附录 E 可靠度模型的权重', 'T5_chain_variants.csv': '表 6 回路的设计选择和没有增益的变体',
-         'T5b_hypergraph_retrieval.csv': '表 6 的补充：超图检索', 'T6a_breakdown_by_type.csv': '图 6 左：按题型或跳数',
-         'T6b_error_categories.csv': '图 6 右：错误归类', 'T7_cost.csv': '表 3 成本', 'T7b_wallclock.csv': '附录 L 运行时间',
-         'A1_dataset_statistics.csv': '附录 B 数据集统计', 'A3_agreement.csv': '附录 I 执行是否一致',
-         'A4_pairwise_complementarity.csv': '附录 I 互补性热力图，支撑 5.4 节', 'A5_plan_memory_similarity.csv': '附录 J',
-         'A6_risk_coverage.csv': '附录 K 选择性回答', 'A7_retrieval.csv': '附录 H 检索质量', 'cases.jsonl': '6.3 节案例，附录 M',
-         'prompts.md': '附录 C 提示词', 'config/': '附录 D 实现细节，附录 F 登记的配置'}
-# Published results under the same protocol (HippoRAG 2 test subsets), copied from RELATED_RESULTS.md section 2: EM, F1.
+         'T3_diversity_source.csv': '附录 I 执行的来源（正文 6.2 节引用）', 'F2_f1_vs_executions.csv': '图 4 F1 随执行次数变化',
+         'F3_calibration_bins.csv': '图 5 左：校准图', 'F3_calibration_summary.csv': '图 5 的图注，表 3 的校准数字',
+         'F4_cost_accuracy.csv': '图 3 成本和准确率', 'T4a_reliability_features.csv': '表 3 可靠度模型：特征',
+         'T4b_reliability_training_size.csv': '表 3 可靠度模型：训练量', 'T4c_reliability_transfer.csv': '表 3 可靠度模型：跨数据集',
+         'T4d_reliability_weights.csv': '附录 E 可靠度模型的权重', 'T5_chain_variants.csv': '表 4 回路的设计选择和没有增益的变体',
+         'T6a_breakdown_by_type.csv': '图 6 左：按题型或跳数',
+         'T6b_error_categories.csv': '图 6 右：错误归类', 'T7_cost.csv': '表 1 的成本两列；附录 L 成本全表',
+         'T7b_wallclock.csv': '附录 L 运行时间', 'A1_dataset_statistics.csv': '附录 B 数据集统计',
+         'A3_agreement.csv': '附录 J 执行是否一致', 'A4_pairwise_complementarity.csv': '附录 J 互补性热力图，支撑 6.2 节',
+         'A5_plan_memory_similarity.csv': '附录 K 规划示例和训练题相似度', 'A6_risk_coverage.csv': '图 5 右：选择性回答',
+         'A7_retrieval.csv': '附录 H 检索质量', 'A8_quote_grounding.csv': '3.2 节的引文统计；附录 H',
+         'cases.jsonl': '表 5 案例，附录 M', 'prompts.md': '附录 C 提示词', 'config/': '附录 D 实现细节，附录 F 登记的配置'}
+# Published results under the same protocol (HippoRAG 2 test subsets), as listed in the main results table: EM, F1.
 PUBLISHED = [
-    ('NV-Embed-v2 dense retrieval', 'Llama-3.3-70B', 'arXiv 2502.14802', 'PopQA from memory of the paper, check before use',
+    ('NV-Embed-v2 dense retrieval', 'Llama-3.3-70B', 'arXiv 2502.14802', 'as reported in Table 2',
      {'hotpotqa': (62.8, 75.3), '2wikimultihopqa': (57.5, 61.5), 'musique': (34.7, 45.7), 'nq_rear': ('', 61.9), 'popqa': ('', 55.7)}),
-    ('HippoRAG 2', 'Llama-3.3-70B', 'arXiv 2502.14802', 'PopQA from memory of the paper, check before use',
+    ('HippoRAG 2', 'Llama-3.3-70B', 'arXiv 2502.14802', 'as reported in Table 2',
      {'hotpotqa': (62.7, 75.5), '2wikimultihopqa': (65.0, 71.0), 'musique': (37.2, 48.6), 'nq_rear': ('', 63.3), 'popqa': ('', 56.2)}),
-    ('GFM-RAG (single step)', 'GPT-4o-mini', 'arXiv 2502.01113', 'trained graph retriever; HotpotQA corpus of 9,221 passages',
-     {'hotpotqa': (51.6, 66.9), '2wikimultihopqa': (69.8, 77.7), 'musique': (30.2, 40.4)}),
     ('IRCoT + GFM-RAG', 'GPT-4o-mini', 'arXiv 2502.01113', 'trained graph retriever; HotpotQA corpus of 9,221 passages',
      {'hotpotqa': (56.0, 71.8), '2wikimultihopqa': (72.5, 80.8), 'musique': (36.6, 49.2)}),
     ('HGRAG', 'Llama-3.3-70B', 'arXiv 2508.11247', '', {'hotpotqa': (63.9, 76.8), '2wikimultihopqa': (70.3, 78.3), 'musique': (42.2, 53.8)}),
-    ('ConRAG', 'Gemma-4-31B', '2026-05', 'not checked against the paper table',
-     {'hotpotqa': (61.5, 74.3), '2wikimultihopqa': (69.9, 78.2), 'musique': (40.4, 53.1)}),
     ('HyperProve', 'GPT-OSS-20B', '2026-09', '', {'hotpotqa': (63.9, 76.6), '2wikimultihopqa': (69.7, 80.0), 'musique': (42.8, 59.2)}),
-    ('G3RAG (Geometric Gain Graph)', 'not stated', 'arXiv 2609.19622', 'F1 only',
-     {'hotpotqa': ('', 78.00), '2wikimultihopqa': ('', 69.20), 'musique': ('', 52.28)}),
-    ('HyperReCo', 'GPT-4o-mini', 'arXiv 2609.32327', 'trained hypergraph retriever; HotpotQA corpus of 9,221 passages',
-     {'hotpotqa': (60.7, 74.0), '2wikimultihopqa': (72.2, 78.7), 'musique': (39.9, 51.5)}),
-    ('SG2RAG', 'Llama-3.3-70B', 'arXiv 2610.15285', 'v1 withdrawn on 2026-11-17',
-     {'hotpotqa': (57.70, 71.74), '2wikimultihopqa': (61.00, 69.08), 'musique': (32.10, 45.22)}),
     ('HyperAddress', 'Qwen3.5-27B', 'arXiv 2610.35412', 'reports the last 800 questions only',
      {'hotpotqa': (67.1, 80.1), '2wikimultihopqa': (66.8, 75.1), 'musique': (46.5, 59.1)}),
 ]
@@ -153,7 +144,8 @@ def merge_rules(out, benches, final):
     sets = [('dense read + A1 + 2 memory plans (final)', final), ('A1 + 2 memory plans', ['fixed', 'memory1', 'memory2']),
             ('A1 + 2 samples T=0.7', ['fixed'] + T07[:2]), ('A1 + 3 samples T=0.7', ['fixed'] + T07),
             ('A1 + 2 samples T=0.3', ['fixed'] + T03)]
-    rules = [('support', 'calibrated support: noisy-OR of reliabilities'), ('vote', 'majority vote'),
+    # Majority vote returns the first member of the largest group, as in the paper.
+    rules = [('support', 'calibrated support: noisy-OR of reliabilities'), ('vote', 'majority vote: the largest group wins'),
              ('reliable', 'most reliable execution, no pooling'), ('oracle', 'oracle: best execution (reads the gold answer)')]
     rows = []
     for (split, dataset), bench in benches.items():
@@ -347,32 +339,22 @@ def variants(out, results):
     kinds = {'cand3': ('binding', 'three candidates per hop, first taken'),
              'cand3_s1500_bt': ('binding', 'three candidates per hop + learned hop scorer + backtracking'),
              'knn_single': ('planning', 'plan examples from gold decompositions of training questions'),
-             'hyper_single': ('retrieval', 'hypergraph retrieval inside the same chain'),
              'no final reader': ('reader', 'no final reader: the last hop answers'),
              'ctx_notes': ('reader', 'final reader sees the hop notes only'),
              'ctx_passages': ('reader', 'final reader sees the passages only'),
              'khop4': ('retrieval', 'four passages per hop instead of eight')}
-    rows, graph = [], []
+    rows = []
     for split, data in results['splits'].items():
         for dataset, entry in data.items():
             runs = results.get('baseline_runs', {}).get(split, {}).get(dataset, {})
-            found = [(tag, runs[tag], runs[tag]['minus_single']) for tag in ('cand3', 'cand3_s1500_bt', 'knn_single', 'hyper_single') if tag in runs]
+            found = [(tag, runs[tag], runs[tag]['minus_single']) for tag in ('cand3', 'cand3_s1500_bt', 'knn_single') if tag in runs]
             found += [(tag, value, value.get('minus_fixed')) for tag, value in entry.get('chain_design', {}).items()]
             for tag, value, minus_a1 in found:
                 rows.append([split, NAMES[dataset], kinds[tag][0], kinds[tag][1]] + stored(value)[:5] + triple(minus_a1)
                             + triple(value.get('minus_final')))
-            if 'hypergraph' in entry:
-                value = entry['hypergraph']
-                graph.append([split, NAMES[dataset]] + value['hyper_minus_fixed'] + value['preregistered_minus_final'] + [value['calls_added']]
-                             + value['evidence_recall'] + value['evidence_all'] + [value['only_hyper_all'], value['only_dense_all'],
-                                                                                    value['recall_differs'], value['same_answer']])
     write(out, 'T5_chain_variants.csv', '表 5 没有带来增益的设计，以及回路自身的设计选择', '每一行是把 A1 改动一处后的单次执行，和 A1 配对比较',
           ['split', 'dataset', 'part', 'variant', 'n', 'f1', 'f1_lo', 'f1_hi', 'em', 'minus_a1', 'minus_a1_lo', 'minus_a1_hi',
            'minus_final', 'minus_final_lo', 'minus_final_hi'], rows)
-    write(out, 'T5b_hypergraph_retrieval.csv', '表 5 的补充：超图检索回路和稠密检索回路', '同一条回路，只换每一跳的检索；以及把它加进最终方法的效果',
-          ['split', 'dataset', 'hyper_minus_a1', 'lo', 'hi', 'added_to_final', 'added_lo', 'added_hi', 'calls_added',
-           'evidence_recall_dense', 'evidence_recall_hyper', 'all_evidence_dense', 'all_evidence_hyper', 'only_hyper_finds_all_percent',
-           'only_dense_finds_all_percent', 'recall_differs_percent', 'same_final_answer_percent'], graph)
 
 
 def errors(out, results, benches, final):
@@ -426,15 +408,16 @@ def cost(out, results):
     if path.exists():
         state = json.loads(path.read_text())
         state = state.get('jobs', state)
+        jobs = {job['name'] for job in json.loads((ROOT / 'configs/queue_v2.json').read_text())['jobs']}
         rows = [[name, row.get('status'), round(row['seconds'] / 60, 1), row.get('finished')] for name, row in state.items()
-                if isinstance(row, dict) and row.get('seconds')]
+                if isinstance(row, dict) and row.get('seconds') and name in jobs]
         write(out, 'T7b_wallclock.csv', '附录：运行时间', '队列里每个任务的墙钟时间（单张显卡；回路类任务 12 个并发；后跑的任务会命中调用缓存，时间偏短）',
               ['job', 'status', 'minutes', 'finished_utc'], rows)
 
 
-def statistics(out, frozen, benches):
+def statistics(out, config, benches):
     rows = []
-    for dataset in frozen['datasets']:
+    for dataset in config['datasets']:
         samples = load_test_samples(ROOT, dataset)
         corpus = json.loads((ROOT / 'data/hipporag2' / (dataset + '_corpus.json')).read_text(encoding='utf-8'))
         rows += [[NAMES[dataset], 'test questions', len(samples)], [NAMES[dataset], 'corpus passages', len(corpus)],
@@ -444,7 +427,7 @@ def statistics(out, frozen, benches):
         rows += [[NAMES[dataset], 'test questions of type ' + kind, sum(str(item.stratum) == kind for item in samples)] for kind in kinds]
         if ('dev-A', dataset) in benches:
             rows.append([NAMES[dataset], 'dev-A questions', len(benches[('dev-A', dataset)].ids)])
-        source = frozen.get('transfer', {}).get(dataset, dataset)
+        source = config.get('transfer', {}).get(dataset, dataset)
         rows.append([NAMES[dataset], 'training questions behind the reliability model and plan memories', '1500 of ' + NAMES[source]])
     write(out, 'A1_dataset_statistics.csv', '附录：数据集统计（正文可放小表）', '测试子集、语料大小、题型分布', ['dataset', 'quantity', 'value'], rows)
 
@@ -498,7 +481,7 @@ def selective(out, benches, final):
 def retrieval(out, benches):
     rows = []
     labels = {'dense': 'dense read: top 5 passages of NV-Embed-v2', 'fixed': 'chain A1: passages given to the final reader',
-              'memory1': 'memory plan 1', 'memory2': 'memory plan 2', 'hyper': 'hypergraph chain (removed)'}
+              'memory1': 'memory plan 1', 'memory2': 'memory plan 2'}
     for (split, dataset), bench in benches.items():
         for name, label in labels.items():
             if name in bench.runs:
@@ -512,6 +495,34 @@ def retrieval(out, benches):
                 rows.append([split, NAMES[dataset], label, value.get('scored'), value.get('recall_at_5'), value.get('all_supporting_at_5', '')])
     write(out, 'A7_retrieval.csv', '表：检索质量（正文小表或附录）', '给最终阅读的 5 段里，标准证据段落的召回，以及全部找齐的比例',
           ['split', 'dataset', 'system', 'n', 'evidence_recall_percent', 'all_evidence_found_percent'], rows)
+
+
+def quote_grounding(out, benches):
+    """Chain A1: how often the answer of a hop comes with a sentence found word for word in a retrieved passage, and the
+    F1 of the questions whose chain finished with every quote verbatim against the F1 of the rest."""
+    rows = []
+    for (split, dataset), bench in benches.items():
+        scored, records = bench.runs['fixed']
+        hops = verbatim = explicit = 0
+        grounded, rest = [], []
+        for key in bench.ids:
+            record = records[key]
+            whole = bool(record.get('steps')) and bool(record.get('complete'))
+            for step in record.get('steps', []):
+                index = step.get('chosen')
+                candidate = step['candidates'][index] if isinstance(index, int) and 0 <= index < len(step['candidates']) else None
+                found = bool(candidate and candidate.get('quote_verbatim'))
+                hops, verbatim = hops + 1, verbatim + found
+                explicit += bool(candidate and candidate.get('support') == 'explicit')
+                whole = whole and found
+            (grounded if whole else rest).append(scored[key]['f1'])
+        rows.append([split, NAMES[dataset], len(bench.ids), hops, round(100 * verbatim / max(1, hops), 1),
+                     round(100 * explicit / max(1, hops), 1), round(100 * len(grounded) / max(1, len(bench.ids)), 1),
+                     round(100 * float(np.mean(grounded)), 2) if grounded else '', round(100 * float(np.mean(rest)), 2) if rest else ''])
+    write(out, 'A8_quote_grounding.csv', '3.2 节的引文统计；附录 H',
+          'A1 每一跳的答案是否带有在检索段落里逐字出现的引文；回路走完且每跳引文都逐字出现的题，和其余题的 F1',
+          ['split', 'dataset', 'n', 'hops', 'hops_with_verbatim_quote_percent', 'hops_marked_explicit_percent',
+           'questions_complete_and_all_quotes_verbatim_percent', 'f1_of_those_questions', 'f1_of_the_rest'], rows)
 
 
 def cases(out, benches, final, per_kind=8):
@@ -585,7 +596,7 @@ def configuration(out):
     from hyperbind import chain_agent
     folder = out / 'config'
     folder.mkdir(parents=True, exist_ok=True)
-    for path in [ROOT / 'configs/final.json', ROOT / 'configs/frozen_v2.json', ROOT / 'configs/splits.json'] + sorted(
+    for path in [ROOT / 'configs/final.json', ROOT / 'configs/splits.json'] + sorted(
             (ROOT / 'configs/support').glob('*.json')) + sorted((ROOT / 'configs/scorers').glob('*.json')):
         if path.exists():
             shutil.copy2(path, folder / path.name)
@@ -600,15 +611,15 @@ def configuration(out):
                'intervals': '95% bootstrap over questions, 10,000 resamples, seed 0; differences are paired',
                'concurrency': '12 questions in parallel per run, one GPU'}
     (folder / 'implementation.json').write_text(json.dumps(details, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
-    FILES.append(('config/', '附录：实现细节和复现', '冻结的配置、拟合好的可靠度模型和逐跳打分器、实现细节 implementation.json', len(list(folder.iterdir()))))
+    FILES.append(('config/', '附录：实现细节和复现', '数据划分、拟合好的可靠度模型和逐跳打分器、实现细节 implementation.json', len(list(folder.iterdir()))))
 
 
-def missing_runs(frozen):
+def missing_runs(config):
     missing = []
-    for dataset in frozen['datasets']:
+    for dataset in config['datasets']:
         tags = ['a0', 'single', 'selfmem_answer', 'selfmem2_answer', 'b2_hipporag2', 'sc07_1', 'sc07_2', 'llm_select']
         if dataset in MULTIHOP:
-            tags += ['b3_ircot', 'sc07_3', 'sc03_1', 'sc03_2', 'ctx_notes', 'ctx_passages', 'khop4', 'cand3', 'hyper_single']
+            tags += ['b3_ircot', 'sc07_3', 'sc03_1', 'sc03_2', 'ctx_notes', 'ctx_passages', 'khop4', 'cand3']
         missing += ['test / %s / %s' % (NAMES[dataset], tag) for tag in tags
                     if not (ROOT / 'runs/chain/test' / dataset / tag / 'scored.json').exists()]
     missing += ['dev-A / %s / llm_select' % NAMES[dataset] for dataset in MULTIHOP
@@ -623,13 +634,12 @@ def main():
     out = arguments.out
     out.mkdir(parents=True, exist_ok=True)
     results = json.loads((ROOT / 'paper/results.json').read_text(encoding='utf-8'))
-    frozen = json.loads((ROOT / 'configs/frozen_v2.json').read_text())
-    chosen = json.loads((ROOT / 'configs/final.json').read_text())
-    final, transfer = chosen['final'], dict(frozen.get('transfer', {}), **chosen.get('transfer', {}))
+    config = json.loads((ROOT / 'configs/final.json').read_text())
+    final, transfer = config['final'], config['transfer']
     benches = {}
     for split in ('test', 'dev-A'):
-        for dataset in frozen['datasets']:
-            bench = base.Bench(frozen, transfer, dataset, split)
+        for dataset in config['datasets']:
+            bench = base.Bench(config, transfer, dataset, split)
             if bench.ids and bench.has(final) and bench.model is not None and dataset in results['splits'].get(split, {}):
                 benches[(split, dataset)] = bench
     main_results(out, results, benches, final)
@@ -642,14 +652,15 @@ def main():
     variants(out, results)
     errors(out, results, benches, final)
     cost(out, results)
-    statistics(out, frozen, benches)
+    statistics(out, config, benches)
     agreement(out, results, benches)
     selective(out, benches, final)
     retrieval(out, benches)
+    quote_grounding(out, benches)
     cases(out, benches, final)
     prompts(out)
     configuration(out)
-    missing = missing_runs(frozen)
+    missing = missing_runs(config)
     lines = ['# 论文数据包', '', '由 `scripts/paper_data.py` 生成，时间 %s UTC。先跑 `scripts/paper_results.py`，再跑本脚本。' % time.strftime(
         '%Y-%m-%d %H:%M', time.gmtime()), '',
         '- F1、EM 都是百分数；区间是按题目自助重采样的 95% 区间（10,000 次），差值都是配对差。',

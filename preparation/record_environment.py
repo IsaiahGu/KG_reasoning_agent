@@ -11,7 +11,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--name', choices=['main', 'embed', 'serve'], required=True)
 args = parser.parse_args()
 root = Path('/workspace/hg_reasoning_agent')
-packages = ['torch', 'transformers', 'gliner', 'pyarrow', 'vllm', 'numpy', 'sentencepiece', 'protobuf', 'huggingface-hub', 'hipporag']
+packages = ['torch', 'transformers', 'pyarrow', 'vllm', 'numpy', 'sentencepiece', 'protobuf', 'huggingface-hub', 'hipporag']
 versions = {}
 for package in packages:
     try:

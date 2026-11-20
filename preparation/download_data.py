@@ -213,12 +213,7 @@ def main():
     tasks += hf_tasks('osunlp/HippoRAG_2',
         ['README.md', 'musique.json', 'musique_corpus.json', '2wikimultihopqa.json',
          '2wikimultihopqa_corpus.json', 'hotpotqa.json', 'hotpotqa_corpus.json',
-         'narrativeqa_dev_10_doc.json', 'narrativeqa_dev_10_doc_corpus.json'], 'hipporag2')
-    tasks += hf_tasks('xinrongzhang2022/InfiniteBench',
-        ['README.md', 'longbook_choice_eng.jsonl', 'longbook_qa_eng.jsonl'], 'infinitebench')
-    tasks += hf_tasks('GraphRAG-Bench/GraphRAG-Bench',
-        ['README.md', 'Datasets/Corpus/novel.json', 'Datasets/Corpus/medical.json',
-         'Datasets/Questions/novel_questions.json', 'Datasets/Questions/medical_questions.json'], 'graphrag_bench')
+         'nq_rear.json', 'nq_rear_corpus.json', 'popqa.json', 'popqa_corpus.json'], 'hipporag2')
     tasks += hf_tasks('hotpotqa/hotpot_qa',
         ['README.md', 'distractor/train-00000-of-00002.parquet', 'distractor/train-00001-of-00002.parquet'], 'raw/hotpotqa')
     tasks += [
@@ -229,20 +224,10 @@ def main():
          'relative_path': 'raw/musique/musique_data_v1.0.zip', 'google_drive': True,
          'expected_bytes': 272049578,
          'source_reference': 'https://github.com/stonybrooknlp/musique/blob/main/download_data.sh'},
-        {'url': 'https://reltrans.s3.us-east-2.amazonaws.com/WikiTopics_QE.zip',
-         'relative_path': 'wikitopics/WikiTopics_QE.zip', 'expected_bytes': 274252209,
-         'source_reference': 'https://github.com/Vincent-Lien/HyperRAG#datasets'},
-        {'url': 'https://drive.google.com/uc?export=download&id=13xpzP1MCld5Cpr4W7YNyVkscD8mcKysC',
-         'relative_path': 'wikitopics/WikiTopicsQE_NLG.zip', 'google_drive': True,
-         'expected_bytes': 368542554,
-         'source_reference': 'https://github.com/Vincent-Lien/HyperRAG#datasets'},
     ]
     manifest['notes'] += [
         'Only downloads and structural checks are performed; no model is loaded and no experiment starts.',
         'HotpotQA old CMU download hostname fails DNS; official maintainer Hugging Face dataset train parquet shards preserve questions, answers, contexts and supporting facts.',
-        'HippoRAG NarrativeQA 10-document release is additionally archived because HGMem public repository contains only one question and one source document.',
-        'WikiTopics is conditionally prepared only; the required 1% baseline reproduction gate has NOT been run.',
-        'LoCoMo is excluded by PLAN_V1 default. No experimental train/dev split or index is built here.',
     ]
     save()
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
@@ -250,8 +235,7 @@ def main():
     for source, dest in [
         ('raw/2wikimultihop/data_ids_april7.zip', 'raw/2wikimultihop/extracted'),
         ('raw/musique/musique_data_v1.0.zip', 'raw/musique/extracted'),
-        ('wikitopics/WikiTopics_QE.zip', 'wikitopics/kg'),
-        ('wikitopics/WikiTopicsQE_NLG.zip', 'wikitopics/nlg')]:
+    ]:
         try:
             extract(source, dest)
         except Exception as e:

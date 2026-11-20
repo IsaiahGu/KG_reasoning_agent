@@ -41,58 +41,6 @@
    "deps": []
   },
   {
-   "name": "v2_memory_support",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/build_plan_memory.py",
-    "--admit",
-    "support",
-    "--out",
-    "runs/plan_memory/musique_self_support.json"
-   ],
-   "services": "any",
-   "check": "file",
-   "path": "runs/plan_memory/musique_self_support.json",
-   "est_minutes": 2,
-   "stall_minutes": 30,
-   "deps": []
-  },
-  {
-   "name": "v2_val_selfmem_support",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "train-S",
-    "--tag",
-    "selfmem_support_val",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--offset",
-    "1500",
-    "--limit",
-    "500",
-    "--plan",
-    "knn",
-    "--plan-cases",
-    "runs/plan_memory/musique_self_support.json"
-   ],
-   "check": "chain",
-   "path": "runs/chain/train-S/musique/selfmem_support_val/summary.json",
-   "progress": "runs/chain/train-S/musique/selfmem_support_val/records.jsonl",
-   "questions": 500,
-   "est_minutes": 16,
-   "deps": [
-    "v2_memory_support"
-   ]
-  },
-  {
    "name": "v2_val_selfmem_answer",
    "cmd": [
     "envs/main/bin/python",
@@ -127,40 +75,6 @@
    ]
   },
   {
-   "name": "v2_val_knn_skip6",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "train-S",
-    "--tag",
-    "knn_skip6_val",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--offset",
-    "1500",
-    "--limit",
-    "500",
-    "--plan",
-    "knn",
-    "--plan-pool-limit",
-    "1500",
-    "--plan-skip",
-    "6"
-   ],
-   "check": "chain",
-   "path": "runs/chain/train-S/musique/knn_skip6_val/summary.json",
-   "progress": "runs/chain/train-S/musique/knn_skip6_val/records.jsonl",
-   "questions": 500,
-   "est_minutes": 16,
-   "deps": []
-  },
-  {
    "name": "v2_devA_single",
    "cmd": [
     "envs/main/bin/python",
@@ -183,36 +97,6 @@
    "questions": 500,
    "est_minutes": 16,
    "deps": []
-  },
-  {
-   "name": "v2_devA_selfmem_support",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "dev-A",
-    "--tag",
-    "selfmem_support",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--plan",
-    "knn",
-    "--plan-cases",
-    "runs/plan_memory/musique_self_support.json"
-   ],
-   "check": "chain",
-   "path": "runs/chain/dev-A/musique/selfmem_support/summary.json",
-   "progress": "runs/chain/dev-A/musique/selfmem_support/records.jsonl",
-   "questions": 500,
-   "est_minutes": 16,
-   "deps": [
-    "v2_memory_support"
-   ]
   },
   {
    "name": "v2_devA_selfmem_answer",
@@ -245,34 +129,6 @@
    ]
   },
   {
-   "name": "v2_devA_knn_skip6",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "dev-A",
-    "--tag",
-    "knn_skip6",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--plan",
-    "knn",
-    "--plan-skip",
-    "6"
-   ],
-   "check": "chain",
-   "path": "runs/chain/dev-A/musique/knn_skip6/summary.json",
-   "progress": "runs/chain/dev-A/musique/knn_skip6/records.jsonl",
-   "questions": 500,
-   "est_minutes": 16,
-   "deps": []
-  },
-  {
    "name": "v2_fit_knn_loo",
    "cmd": [
     "envs/main/bin/python",
@@ -302,18 +158,6 @@
    "questions": 1500,
    "est_minutes": 50,
    "deps": []
-  },
-  {
-   "name": "v2_merge_report",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/merge_report.py"
-   ],
-   "services": "any",
-   "check": "marker",
-   "est_minutes": 2,
-   "stall_minutes": 30
   },
   {
    "name": "v3_fit_selfmem_answer",
@@ -436,20 +280,6 @@
    ]
   },
   {
-   "name": "v3_merge_report",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/merge_report.py",
-    "--out",
-    "reports/merge_v2_report.md"
-   ],
-   "services": "any",
-   "check": "marker",
-   "est_minutes": 2,
-   "stall_minutes": 30
-  },
-  {
    "name": "v4_2w_embed",
    "services": "off",
    "check": "marker",
@@ -480,114 +310,6 @@
     "--split",
     "train-S"
    ]
-  },
-  {
-   "name": "h_mu_hyper_single",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "dev-A",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/dev-A/musique/hyper_single/summary.json",
-   "progress": "runs/chain/dev-A/musique/hyper_single/records.jsonl",
-   "questions": 500,
-   "est_minutes": 12,
-   "deps": []
-  },
-  {
-   "name": "h_mu_hyper_selfmem2",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "dev-A",
-    "--tag",
-    "hyper_selfmem2",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper",
-    "--plan",
-    "knn",
-    "--plan-cases",
-    "runs/plan_memory/musique_self_answer2.json"
-   ],
-   "check": "chain",
-   "path": "runs/chain/dev-A/musique/hyper_selfmem2/summary.json",
-   "progress": "runs/chain/dev-A/musique/hyper_selfmem2/records.jsonl",
-   "questions": 500,
-   "est_minutes": 12,
-   "deps": []
-  },
-  {
-   "name": "h_2w_hyper_single",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "2wikimultihopqa",
-    "--split",
-    "dev-A",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/dev-A/2wikimultihopqa/hyper_single/summary.json",
-   "progress": "runs/chain/dev-A/2wikimultihopqa/hyper_single/records.jsonl",
-   "questions": 500,
-   "est_minutes": 12,
-   "deps": []
-  },
-  {
-   "name": "h_hp_hyper_single",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "hotpotqa",
-    "--split",
-    "dev-A",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/dev-A/hotpotqa/hyper_single/summary.json",
-   "progress": "runs/chain/dev-A/hotpotqa/hyper_single/records.jsonl",
-   "questions": 500,
-   "est_minutes": 12,
-   "deps": []
   },
   {
    "name": "t_mu_a0",
@@ -692,51 +414,6 @@
    "questions": 1000,
    "est_minutes": 17,
    "deps": []
-  },
-  {
-   "name": "x_mu_index",
-   "services": "off",
-   "check": "file",
-   "path": "runs/test_index/musique/metadata.json",
-   "progress": "runs/test_index/musique/mentions.jsonl",
-   "est_minutes": 60,
-   "stall_minutes": 45,
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/build_test_graph_index.py",
-    "--dataset",
-    "musique"
-   ],
-   "deps": []
-  },
-  {
-   "name": "t_mu_hyper",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "musique",
-    "--split",
-    "test",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/test/musique/hyper_single/summary.json",
-   "progress": "runs/chain/test/musique/hyper_single/records.jsonl",
-   "questions": 1000,
-   "est_minutes": 20,
-   "deps": [
-    "x_mu_index"
-   ]
   },
   {
    "name": "v4_2w_single_fit",
@@ -1122,27 +799,6 @@
    ]
   },
   {
-   "name": "v4_2w_report",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/merge_report.py",
-    "--dataset",
-    "2wikimultihopqa",
-    "--model",
-    "configs/support/2wikimultihopqa_chain_v1.json",
-    "--out",
-    "reports/merge_2wikimultihopqa_report.md"
-   ],
-   "services": "any",
-   "check": "marker",
-   "est_minutes": 2,
-   "stall_minutes": 30,
-   "deps": [
-    "v4_2w_fit_support"
-   ]
-  },
-  {
    "name": "t_2w_a0",
    "cmd": [
     "envs/main/bin/python",
@@ -1248,51 +904,6 @@
    "est_minutes": 17,
    "deps": [
     "v4_2w_memory2"
-   ]
-  },
-  {
-   "name": "x_2w_index",
-   "services": "off",
-   "check": "file",
-   "path": "runs/test_index/2wikimultihopqa/metadata.json",
-   "progress": "runs/test_index/2wikimultihopqa/mentions.jsonl",
-   "est_minutes": 60,
-   "stall_minutes": 45,
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/build_test_graph_index.py",
-    "--dataset",
-    "2wikimultihopqa"
-   ],
-   "deps": []
-  },
-  {
-   "name": "t_2w_hyper",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "2wikimultihopqa",
-    "--split",
-    "test",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/test/2wikimultihopqa/hyper_single/summary.json",
-   "progress": "runs/chain/test/2wikimultihopqa/hyper_single/records.jsonl",
-   "questions": 1000,
-   "est_minutes": 20,
-   "deps": [
-    "x_2w_index"
    ]
   },
   {
@@ -1679,27 +1290,6 @@
    ]
   },
   {
-   "name": "v4_hp_report",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/merge_report.py",
-    "--dataset",
-    "hotpotqa",
-    "--model",
-    "configs/support/hotpotqa_chain_v1.json",
-    "--out",
-    "reports/merge_hotpotqa_report.md"
-   ],
-   "services": "any",
-   "check": "marker",
-   "est_minutes": 2,
-   "stall_minutes": 30,
-   "deps": [
-    "v4_hp_fit_support"
-   ]
-  },
-  {
    "name": "t_hp_a0",
    "cmd": [
     "envs/main/bin/python",
@@ -1808,51 +1398,6 @@
    ]
   },
   {
-   "name": "x_hp_index",
-   "services": "off",
-   "check": "file",
-   "path": "runs/test_index/hotpotqa/metadata.json",
-   "progress": "runs/test_index/hotpotqa/mentions.jsonl",
-   "est_minutes": 60,
-   "stall_minutes": 45,
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/build_test_graph_index.py",
-    "--dataset",
-    "hotpotqa"
-   ],
-   "deps": []
-  },
-  {
-   "name": "t_hp_hyper",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "hotpotqa",
-    "--split",
-    "test",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/test/hotpotqa/hyper_single/summary.json",
-   "progress": "runs/chain/test/hotpotqa/hyper_single/records.jsonl",
-   "questions": 1000,
-   "est_minutes": 20,
-   "deps": [
-    "x_hp_index"
-   ]
-  },
-  {
    "name": "e_nq_embed",
    "cmd": [
     "envs/main/bin/python",
@@ -1915,53 +1460,6 @@
    "est_minutes": 10,
    "deps": [
     "e_nq_embed"
-   ]
-  },
-  {
-   "name": "x_nq_index",
-   "services": "off",
-   "check": "file",
-   "path": "runs/test_index/nq_rear/metadata.json",
-   "progress": "runs/test_index/nq_rear/mentions.jsonl",
-   "est_minutes": 60,
-   "stall_minutes": 45,
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/build_test_graph_index.py",
-    "--dataset",
-    "nq_rear"
-   ],
-   "deps": [
-    "e_nq_embed"
-   ]
-  },
-  {
-   "name": "t_nq_hyper",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/run_chain.py",
-    "--dataset",
-    "nq_rear",
-    "--split",
-    "test",
-    "--tag",
-    "hyper_single",
-    "--workers",
-    "12",
-    "--candidates",
-    "1",
-    "--retrieval",
-    "hyper"
-   ],
-   "check": "chain",
-   "path": "runs/chain/test/nq_rear/hyper_single/summary.json",
-   "progress": "runs/chain/test/nq_rear/hyper_single/records.jsonl",
-   "questions": 1000,
-   "est_minutes": 12,
-   "deps": [
-    "x_nq_index"
    ]
   },
   {
@@ -3867,18 +3365,6 @@
     "--split",
     "dev-A"
    ]
-  },
-  {
-   "name": "t_report",
-   "cmd": [
-    "envs/main/bin/python",
-    "-B",
-    "scripts/test_report.py"
-   ],
-   "services": "any",
-   "check": "marker",
-   "est_minutes": 2,
-   "stall_minutes": 30
   }
  ]
 }

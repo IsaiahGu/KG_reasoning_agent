@@ -2,17 +2,13 @@
 """Paper tables and per-question raw data from finished runs. CPU only: no GPU job is started and no LLM is called.
 
 The final method (configs/final.json) merges four derivations by calibrated support: dense read, chain A1, memory plans
-1 and 2. The headline pre-registered in configs/frozen_v2.json had a fifth derivation, the hypergraph-retrieval chain;
-it was removed after the test runs and keeps a row and an analysis of its own.
+1 and 2. This pre-specified fallback was selected for reporting after testing.
 
 Writes
   paper/results.json                              every number below, machine readable
   paper/tables/*.md                               the same numbers as tables
   paper/raw/<dataset>/<split>_predictions.jsonl   one line per question: gold answers; for every derivation its answer,
-                                                  score, reliability, plan and cost; the final, on-demand and
-                                                  pre-registered answers with their support
-Rows beyond the pre-registered ones (leave one out, merge rules, feature groups, transfer, calibration) are analyses
-added after the test results. None of them changes the final configuration; every row says which kind it is.
+                                                  score, reliability, plan and cost, and both merged answers
 """
 import argparse
 import json
@@ -29,8 +25,7 @@ from hyperbind.support import FEATURES, SupportModel, answer_groups, chain_featu
 from hyperbind.textmatch import same_answer  # noqa: E402
 
 NAMES = {'musique': 'MuSiQue', '2wikimultihopqa': '2Wiki', 'hotpotqa': 'HotpotQA', 'nq_rear': 'NQ', 'popqa': 'PopQA'}
-LABELS = {'dense': 'dense read', 'fixed': 'chain A1', 'memory1': 'memory plan 1', 'memory2': 'memory plan 2',
-          'hyper': 'hypergraph chain (removed)'}
+LABELS = {'dense': 'dense read', 'fixed': 'chain A1', 'memory1': 'memory plan 1', 'memory2': 'memory plan 2'}
 GROUPS = {'completion and agreement': ['complete', 'chain_reader_agree', 'marker'],
           'quote evidence': ['min_explicit', 'mean_verbatim', 'min_answer_in_quote'],
           'retrieval scores': ['max_rank', 'min_passage_score', 'min_question_score', 'min_next_top1'],
@@ -41,8 +36,7 @@ BASELINES = (('a0', 'dense read'), ('b1_dense', 'B1: dense retrieval + read'), (
              ('b3_ircot', 'B3: IRCoT, same reader and embedder'), ('single', 'chain A1'),
              ('cand3', 'variant: three candidates per hop, first taken'),
              ('cand3_s1500_bt', 'variant: three candidates + learned hop scorer + backtracking'),
-             ('knn_single', 'variant: plan memory from gold decompositions (MuSiQue only)'),
-             ('hyper_single', 'variant: hypergraph chain (removed)'))
+             ('knn_single', 'variant: plan memory from gold decompositions (MuSiQue only)'))
 # Supplementary runs (2026-11-18): repeated samples of chain A1 for the self-consistency baseline, and design variants of
 # the chain. They are loaded next to the derivations when they exist; none of them is part of the final method.
 SAMPLES = {0.7: ['sc07_1', 'sc07_2', 'sc07_3'], 0.3: ['sc03_1', 'sc03_2']}
@@ -52,7 +46,7 @@ RESAMPLES = {}
 
 
 def interval(values):
-    """Mean and 95% bootstrap interval in percent (10,000 resamples, seed 0: the same resamples as scripts/test_report.py)."""
+    """Mean and 95% bootstrap interval in percent (10,000 resamples, seed 0)."""
     values = np.asarray(values, float)
     if len(values) not in RESAMPLES:
         RESAMPLES[len(values)] = np.random.default_rng(0).integers(0, len(values), (10000, len(values)))
@@ -123,10 +117,10 @@ fitted.cache = {}
 class Bench:
     """The finished derivation runs of one dataset and split, and the rules that combine them."""
 
-    def __init__(self, frozen, transfer, dataset, split):
+    def __init__(self, config, transfer, dataset, split):
         self.dataset, self.split = dataset, split
         self.runs = {}
-        for name, tag in frozen['derivations'].items():
+        for name, tag in config['derivations'].items():
             run = load(split, dataset, tag)
             if run is not None:
                 self.runs[name] = run
@@ -135,17 +129,21 @@ class Bench:
             if run is not None and run[0]:
                 self.runs[tag] = run
         self.source = transfer.get(dataset, dataset)
-        path = ROOT / frozen['support_model'].replace('<dataset>', self.source)
+        path = ROOT / config['support_model'].replace('<dataset>', self.source)
         self.model = SupportModel.load(path) if path.exists() else None
         base = self.runs.get('fixed')
         self.ids = sorted(set(base[0]) & set(base[1])) if base else []
         self.cache = {}
+        self.models = {}
 
     def has(self, use):
         return all(name in self.runs for name in use)
 
     def reliability(self, name, key, model=None):
         model = model or self.model
+        # Keep every model alive: the id of a freed model can be handed to the next one loaded, which would then read
+        # the freed model's cached values.
+        self.models.setdefault(id(model), model)
         slot = (id(model), name, key)
         if slot not in self.cache:
             self.cache[slot] = model.reliability(self.runs[name][1][key], dense=name == 'dense')
@@ -259,19 +257,17 @@ def calibration(p, y):
     return {'bins': bins, 'ece': round(100 * float(error), 2), 'auc': auc(p, y), 'brier': round(float(np.mean((p - y) ** 2)), 4)}
 
 
-def analyse(bench, final, preregistered, entry, pages, title):
+def analyse(bench, final, entry, pages, title):
     """All tables of one dataset and split. Returns the final method's merged result."""
-    derivations = [name for name in dict.fromkeys(preregistered + final) if name in bench.runs]
+    derivations = [name for name in final if name in bench.runs]
     singles = {name: bench.evaluate([name]) for name in derivations}
     full, fixed = bench.evaluate(final), singles['fixed']
     against = (('final', full), ('fixed', fixed), ('dense', singles['dense']))
     lazy = bench.evaluate(final, on_demand=True)
-    pre = bench.evaluate(preregistered)
     entry['main'] = {'dense': summary(singles['dense'], *against), 'fixed': summary(fixed, *against),
-                     'final': summary(full, *against), 'on_demand': summary(lazy, *against),
-                     'preregistered': summary(pre, *against)}
+                     'final': summary(full, *against), 'on_demand': summary(lazy, *against)}
 
-    # 1. which derivations matter: single derivations, the pre-registered headline, leave one out, smaller sets
+    # 1. which derivations matter: single derivations, leave one out, smaller sets
     rows, entry['derivations'] = [], {}
 
     def add(label, result, kind):
@@ -285,11 +281,9 @@ def analyse(bench, final, preregistered, entry, pages, title):
         add('single: ' + LABELS[name], singles[name], 'single derivation')
     add('final: four derivations merged by support', full, 'final')
     add('final, expanded on demand', lazy, 'final')
-    add('pre-registered: final + hypergraph chain', pre, 'pre-registered headline')
     for name in final:
         add('without ' + LABELS[name], bench.evaluate([other for other in final if other != name]), 'leave one out')
-    for order in (['fixed', 'memory2'], ['fixed', 'memory1', 'memory2'], ['dense', 'fixed'], ['dense', 'fixed', 'memory2'],
-                  ['fixed', 'hyper']):
+    for order in (['fixed', 'memory2'], ['fixed', 'memory1', 'memory2'], ['dense', 'fixed'], ['dense', 'fixed', 'memory2']):
         if bench.has(order):
             add(' + '.join(LABELS[name] for name in order), bench.evaluate(order), 'subset')
     pages['derivations'] += table(title, None, ['configuration', 'kind', 'F1 [95% CI]', 'EM', 'calls', 'tokens',
@@ -364,30 +358,7 @@ def analyse(bench, final, preregistered, entry, pages, title):
     pages['breakdown'] += table(title, None, ['type', 'n', 'dense read F1', 'chain A1 F1', 'final F1', 'oracle of the four F1',
                                               'A1: all evidence found %'], rows)
 
-    # 7. the removed hypergraph chain against the dense chain (same loop, different hop retrieval)
-    if 'hyper' in bench.runs and pre is not None:
-        dense_run, hyper_run = bench.runs['fixed'][1], bench.runs['hyper'][1]
-        keys = [key for key in full['keys'] if key in hyper_run]
-        all_d = np.array([bool(dense_run[key].get('evidence_all_supporting')) for key in keys])
-        all_h = np.array([bool(hyper_run[key].get('evidence_all_supporting')) for key in keys])
-        recall_d = np.array([dense_run[key].get('evidence_recall', 0) for key in keys])
-        recall_h = np.array([hyper_run[key].get('evidence_recall', 0) for key in keys])
-        value = entry['hypergraph'] = {
-            'hyper_minus_fixed': summary(singles['hyper'], ('fixed', fixed))['minus_fixed'],
-            'preregistered_minus_final': interval([pre['f1'][key] - full['f1'][key] for key in pre['keys']]),
-            'calls_added': round(entry['main']['preregistered']['calls'] - entry['main']['final']['calls'], 2),
-            'evidence_recall': [round(100 * float(recall_d.mean()), 1), round(100 * float(recall_h.mean()), 1)],
-            'evidence_all': [round(100 * float(all_d.mean()), 1), round(100 * float(all_h.mean()), 1)],
-            'only_hyper_all': round(100 * float((~all_d & all_h).mean()), 1),
-            'only_dense_all': round(100 * float((all_d & ~all_h).mean()), 1),
-            'recall_differs': round(100 * float((recall_d != recall_h).mean()), 1),
-            'same_answer': round(100 * float(np.mean([same_answer(dense_run[key].get('reader_clean') or '',
-                                                                 hyper_run[key].get('reader_clean') or '') for key in keys])), 1)}
-        pages['hypergraph'].append([NAMES[bench.dataset], bench.split, diff(value['hyper_minus_fixed']),
-                                    diff(value['preregistered_minus_final']), value['calls_added'],
-                                    '%.1f / %.1f' % tuple(value['evidence_recall']), '%.1f / %.1f' % tuple(value['evidence_all']),
-                                    value['only_hyper_all'], value['only_dense_all'], value['recall_differs'], value['same_answer']])
-    return full, lazy, pre, derivations
+    return full, lazy, derivations
 
 
 def supplement(bench, final, entry, pages, title, full, samples):
@@ -499,7 +470,7 @@ def load_samples_of(bench):
         ROOT / 'data/splits/seed42' / bench.dataset / (bench.split + '.json'), bench.dataset)
 
 
-def write_raw(bench, final, full, lazy, pre, derivations, folder, samples):
+def write_raw(bench, final, full, lazy, derivations, folder, samples):
     gold = {example.id: example for example in samples}
     folder.mkdir(parents=True, exist_ok=True)
     with (folder / ('%s_predictions.jsonl' % bench.split)).open('w', encoding='utf-8') as stream:
@@ -518,7 +489,7 @@ def write_raw(bench, final, full, lazy, pre, derivations, folder, samples):
                     'em': scored[key]['em'], 'reliability': round(bench.reliability(name, key), 4), 'plan': record.get('hops') or [],
                     'complete': bool(record.get('complete')), 'evidence_recall': round(record.get('evidence_recall', 0.0), 4),
                     'calls': record['usage']['calls'], 'tokens': record['usage']['prompt_tokens'] + record['usage']['completion_tokens']}
-            for name, result in (('final', full), ('final_on_demand', lazy), ('preregistered', pre)):
+            for name, result in (('final', full), ('final_on_demand', lazy)):
                 if result is None or key not in result['f1']:
                     continue
                 line[name] = {'from': result['choice'][key], 'answer': bench.runs[result['choice'][key]][1][key].get('reader_clean') or '',
@@ -573,8 +544,7 @@ def overview(results, split):
     mean = lambda values: '%.2f' % float(np.mean(values))
     multihop = [name for name in names if name in ('musique', '2wikimultihopqa', 'hotpotqa')]
     rows = []
-    for key, label in (('dense', 'dense read'), ('fixed', 'chain A1'), ('final', 'final method'), ('on_demand', 'final, on demand'),
-                       ('preregistered', 'pre-registered: final + hypergraph chain')):
+    for key, label in (('dense', 'dense read'), ('fixed', 'chain A1'), ('final', 'final method'), ('on_demand', 'final, on demand')):
         values = [data[name]['main'][key] for name in multihop]
         rows.append([label] + [score(data[name]['main'][key]) for name in names] + (
             ['%s / %s' % (mean([value['f1'][0] for value in values]), mean([value['em'] for value in values]))]
@@ -688,47 +658,37 @@ def cost(results):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=Path, default=ROOT / 'configs/frozen_v2.json')
-    parser.add_argument('--final', type=Path, default=ROOT / 'configs/final.json')
+    parser.add_argument('--config', '--final', type=Path, default=ROOT / 'configs/final.json')
     parser.add_argument('--out', type=Path, default=ROOT / 'paper')
     parser.add_argument('--splits', nargs='+', default=['test', 'dev-A'])
     arguments = parser.parse_args()
-    frozen = json.loads(arguments.config.read_text())
-    chosen = json.loads(arguments.final.read_text())
-    final, preregistered = chosen['final'], frozen['configurations'][frozen['headline']]
-    transfer = dict(frozen.get('transfer', {}), **chosen.get('transfer', {}))
-    results = {'final': final, 'final_config': str(arguments.final.relative_to(ROOT)), 'preregistered': preregistered,
-               'preregistered_config': str(arguments.config.relative_to(ROOT)), 'splits': {}}
+    config = json.loads(arguments.config.read_text())
+    final, transfer = config['final'], config['transfer']
+    results = {'final': final, 'splits': {}}
     pages = {name: [] for name in ('main', 'derivations', 'merge_rule', 'support_features', 'calibration', 'transfer', 'breakdown',
-                                   'hypergraph', 'self_consistency', 'chain_design', 'reliability_training',
+                                   'self_consistency', 'chain_design', 'reliability_training',
                                    'plan_memory_similarity')}
     merged = {}
     for split in arguments.splits:
         main_rows = []
-        for dataset in frozen['datasets']:
-            bench = Bench(frozen, transfer, dataset, split)
+        for dataset in config['datasets']:
+            bench = Bench(config, transfer, dataset, split)
             if not bench.ids or not bench.has(final) or bench.model is None:
                 continue
             title = '%s, %s (%d questions)' % (NAMES[dataset], split, len(bench.ids))
             entry = results['splits'].setdefault(split, {})[dataset] = {'support_model_from': bench.source}
-            full, lazy, pre, derivations = analyse(bench, final, preregistered, entry, pages, title)
+            full, lazy, derivations = analyse(bench, final, entry, pages, title)
             merged[(split, dataset)] = full
             samples = load_samples_of(bench)
             supplement(bench, final, entry, pages, title, full, samples)
-            write_raw(bench, final, full, lazy, pre, derivations, arguments.out / 'raw' / dataset, samples)
+            write_raw(bench, final, full, lazy, derivations, arguments.out / 'raw' / dataset, samples)
             main = entry['main']
-            main_rows.append([NAMES[dataset]] + [score(main[name]) for name in ('dense', 'fixed', 'final', 'on_demand', 'preregistered')]
+            main_rows.append([NAMES[dataset]] + [score(main[name]) for name in ('dense', 'fixed', 'final', 'on_demand')]
                              + ['%.1f / %.1f' % (main['final']['calls'], main['on_demand']['calls']), diff(main['final']['minus_fixed'])])
         if main_rows:
-            pages['main'] += table('Main results, %s' % split, 'F1 / EM. Final method: %s.' % chosen['label'],
-                                   ['dataset', 'dense read', 'chain A1', 'final', 'final, on demand', 'pre-registered (+ hypergraph chain)',
+            pages['main'] += table('Main results, %s' % split, 'F1 / EM. Final method: %s.' % config['label'],
+                                   ['dataset', 'dense read', 'chain A1', 'final', 'final, on demand',
                                     'calls: final / on demand', 'final minus A1'], main_rows)
-    pages['hypergraph'] = table('The removed hypergraph chain against the dense chain',
-                                'Same loop; only the hop retrieval differs. "pre-registered minus final" is the effect of adding the '
-                                'hypergraph chain to the final method.',
-                                ['dataset', 'split', 'hyper chain minus A1', 'pre-registered minus final', 'calls added',
-                                 'evidence recall: dense / hyper', 'all evidence: dense / hyper', 'only hyper finds all %',
-                                 'only dense finds all %', 'recall differs %', 'same final answer %'], pages['hypergraph'])
     pages['baseline_runs'] = baseline_runs(results, merged)
     pages['cost'] = cost(results)
     for split in arguments.splits:
@@ -737,7 +697,7 @@ def main():
     for name, lines in pages.items():
         (arguments.out / 'tables' / (name + '.md')).write_text('\n'.join(lines) + '\n', encoding='utf-8')
     (arguments.out / 'results.json').write_text(json.dumps(results, indent=1, ensure_ascii=False) + '\n', encoding='utf-8')
-    print('\n'.join(pages['main'] + pages['hypergraph']))
+    print('\n'.join(pages['main']))
     print('written: %s' % (arguments.out / 'results.json'))
 
 

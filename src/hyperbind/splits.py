@@ -296,31 +296,6 @@ def build_arena_a(root: Path, config: Mapping[str, Any], datasets: Sequence[str]
     return report
 
 
-def build_graphrag_development(root: Path, seed: int, fraction: Fraction = Fraction(1, 4)) -> dict:
-    """Optional data-only preparation for P5; never called by the P0 CLI."""
-    report = {'seed': seed, 'fraction': str(fraction), 'stratification': 'domain x question_type', 'domains': {}}
-    for domain in ('novel', 'medical'):
-        source = root / 'data/graphrag_bench/Datasets/Questions' / (domain + '_questions.json')
-        rows = load_raw_records(source)
-        grouped = defaultdict(list)
-        for index, row in enumerate(rows):
-            grouped[row['question_type']].append((index, row))
-        # Half up gives 503 novel and 516 medical, together 1,019/4,072 questions.
-        target = (len(rows) * fraction.numerator * 2 + fraction.denominator) // (2 * fraction.denominator)
-        allocation = largest_remainder(target, {key: len(value) for key, value in grouped.items()})
-        selected = []
-        for kind in sorted(grouped):
-            candidates = grouped[kind]
-            random.Random(_seed(seed, domain, kind)).shuffle(candidates)
-            selected.extend(candidates[:allocation[kind]])
-        selected.sort(key=lambda pair: pair[0])
-        destination = root / f'data/splits/graphrag_seed{seed}' / (domain + '_development.json')
-        output = write_json(destination, [row for _, row in selected])
-        report['domains'][domain] = {'full_count': len(rows), 'development_count': len(selected),
-                                     'question_types': allocation, 'source_indices': [i for i, _ in selected], 'output': output}
-    return report
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--root', type=Path, required=True)

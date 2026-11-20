@@ -18,9 +18,6 @@ from huggingface_hub import HfApi, hf_hub_download
 
 MODELS = [
     'Qwen/Qwen3.5-9B', 'nvidia/NV-Embed-v2',
-    'Qwen/Qwen3-Reranker-0.6B', 'urchade/gliner_large-v2.1',
-    'Qwen/Qwen3-Embedding-4B', 'Qwen/Qwen3-Embedding-8B',
-    'Qwen/Qwen3-Reranker-4B',
 ]
 
 def save(path, obj):

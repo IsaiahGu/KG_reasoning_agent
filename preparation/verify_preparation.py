@@ -37,7 +37,6 @@ for model in models:
                    'files': len(model['files']), 'bytes': model['expected_bytes'],
                    'verification': 'upstream SHA256/git blob hash during download; file sizes, shard references and safetensors headers checked'})
 for repo, filenames in {
-    'microsoft/deberta-v3-large': ['config.json', 'tokenizer_config.json', 'spm.model'],
     'nvidia/NV-Embed-v2': ['config.json', 'tokenizer_config.json', 'tokenizer.json', 'tokenizer.model'],
 }.items():
     for filename in filenames:

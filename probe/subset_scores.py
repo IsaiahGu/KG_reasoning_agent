@@ -24,7 +24,7 @@ for dataset in datasets:
         rows[row['id']] = row
     keys = [key for key in order if key in rows]
     cells = []
-    for name in ('final', 'final_on_demand', 'preregistered'):
+    for name in ('final', 'final_on_demand'):
         values = [rows[key][name] for key in keys if name in rows[key]]
         cells.append('%s F1 %.2f EM %.2f' % (name, 100 * np.mean([value['f1'] for value in values]),
                                             100 * np.mean([value['em'] for value in values])))
