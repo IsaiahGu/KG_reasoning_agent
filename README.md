@@ -10,7 +10,9 @@ For a question such as “In which country was the director of *Spirited Away* b
 
 NV-Embed-v2 embeds the retrieval queries. A shared Qwen3.5-9B model plans the hops, extracts intermediate answers, and reads the evidence. Both base models have fixed weights. The direct path skips planning and reads the five passages retrieved for the original question. [Chain execution and direct reader](src/hyperbind/chain_agent.py)
 
-## How the four paths differ
+## Executions used by SupportChain
+
+The full method in the main results table merges the four executions below by calibrated support.
 
 | Path | How it constructs the answer |
 | --- | --- |
@@ -21,7 +23,16 @@ NV-Embed-v2 embeds the retrieval queries. A shared Qwen3.5-9B model plans the ho
 
 Planning memory stores examples of **how to decompose a question**. During construction, the answer-based admission rule keeps completed training chains with valid plans whose answers meet an F1 threshold (0.8 by default). At inference, the planner receives the retrieved questions and their hop sequences. [Memory construction](scripts/build_plan_memory.py) · [Four-path configuration](configs/final.json)
 
-The four-path configuration was recorded before testing as a fallback. After evaluating the alternatives on the test sets, we selected it for reporting because it requires no corpus index. On the four test sets where both configurations ran, its F1 was 0.07 to 0.19 points lower than the original primary configuration; all paired 95% intervals included zero.
+## Ablations and comparisons
+
+| Experiment | What changes |
+| --- | --- |
+| Execution ablation | Keep support merging and remove executions. For example, “Single + 2 plans” omits the dense read from the full method. |
+| Execution-source comparison | Replace the two memory-guided executions with two sampled executions of the fixed-example chain. The appendix reports this comparison both with and without the dense read. |
+| Merge-rule comparison | Give each rule the same execution outputs. Compare calibrated support with majority vote, the most reliable execution, and the reader choosing an answer. |
+| Inference-cost comparison | The full method runs all four executions. The on-demand variant runs the two memory-guided executions only when the dense read and the fixed-example chain disagree. |
+
+The configuration file records when the four-execution reference was selected for reporting. [Configuration](configs/final.json) · [Evaluation](scripts/paper_results.py) · [Paper tables](scripts/paper_data.py)
 
 ## Selecting the final answer
 

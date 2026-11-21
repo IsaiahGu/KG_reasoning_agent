@@ -269,12 +269,14 @@ def analyse(bench, final, entry, pages, title):
 
     # 1. which derivations matter: single derivations, leave one out, smaller sets
     rows, entry['derivations'] = [], {}
+    experiment_labels = {'final': 'method or on-demand variant', 'single derivation': 'single execution',
+                         'leave one out': 'ablation: remove one execution', 'subset': 'ablation: execution subset'}
 
     def add(label, result, kind):
         value = summary(result, *against)
         if value is not None:
             entry['derivations'][label] = dict(value, kind=kind, use=result['use'])
-            rows.append([label, kind, cell(value['f1']), '%.2f' % value['em'], '%.1f' % value['calls'], value['tokens'],
+            rows.append([label, experiment_labels[kind], cell(value['f1']), '%.2f' % value['em'], '%.1f' % value['calls'], value['tokens'],
                          diff(value['minus_final']), diff(value['minus_fixed'])])
 
     for name in derivations:
@@ -286,7 +288,8 @@ def analyse(bench, final, entry, pages, title):
     for order in (['fixed', 'memory2'], ['fixed', 'memory1', 'memory2'], ['dense', 'fixed'], ['dense', 'fixed', 'memory2']):
         if bench.has(order):
             add(' + '.join(LABELS[name] for name in order), bench.evaluate(order), 'subset')
-    pages['derivations'] += table(title, None, ['configuration', 'kind', 'F1 [95% CI]', 'EM', 'calls', 'tokens',
+    pages['derivations'] += table(title, 'Execution ablations use the full method as the reference. Each leave-one-out row removes one execution; subset rows retain the executions named.',
+                                  ['configuration', 'kind', 'F1 [95% CI]', 'EM', 'calls', 'tokens',
                                                 'minus final', 'minus A1'], rows)
 
     # 2. how the answers are combined
@@ -304,7 +307,8 @@ def analyse(bench, final, entry, pages, title):
         rows.insert(3, ['LLM selector: the reader picks among the distinct answers, seeing every derivation\'s steps and quotes',
                         cell(value['f1']), '%.2f' % value['em'], '%.1f' % value['calls'], diff(value['minus_final']),
                         diff(value['minus_fixed'])])
-    pages['merge_rule'] += table(title, None, ['rule', 'F1 [95% CI]', 'EM', 'calls', 'minus final', 'minus A1'], rows)
+    pages['merge_rule'] += table(title, 'Merge-rule comparison on the same four execution outputs. The oracle uses the gold answer to give an upper bound.',
+                                 ['rule', 'F1 [95% CI]', 'EM', 'calls', 'minus final', 'minus A1'], rows)
 
     # 3. which features the reliability model needs (refitted on the same train-S runs with a feature group zeroed)
     chains = [name for name in final if name != 'dense']
