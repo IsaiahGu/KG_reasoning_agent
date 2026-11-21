@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-"""Fit the derivation reliability model (src/hyperbind/support.py) on train-S runs with known answers. CPU only.
+"""Fit the execution reliability model (src/supportchain/support.py) on train-S runs with known answers. CPU only.
 
-Label: the derivation's answer has F1 >= 0.5 against the training answer. The dense prior is the share of right
+Label: the execution's answer has F1 >= 0.5 against the training answer. The dense prior is the share of right
 answers of the direct dense read on the same questions. Prints 5-fold calibration so the numbers can be checked.
 """
 import argparse
@@ -13,7 +13,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.support import FEATURES, SupportModel, chain_features  # noqa: E402
+from supportchain.support import FEATURES, SupportModel, chain_features  # noqa: E402
 
 
 def load(root, dataset, tag, split='train-S'):
@@ -54,7 +54,7 @@ def main():
     for fold in range(5):
         model = SupportModel.fit(X[folds != fold], y[folds != fold], prior)
         out_of_fold[folds == fold] = model.predict(X[folds == fold])
-    print('%d derivations, %.1f%% right; dense prior %.3f' % (len(y), 100 * y.mean(), prior))
+    print('%d executions, %.1f%% right; dense prior %.3f' % (len(y), 100 * y.mean(), prior))
     print('out-of-fold calibration (predicted bin: n, share right):')
     for low in (0.0, 0.2, 0.4, 0.6, 0.8):
         mask = (out_of_fold >= low) & (out_of_fold < low + 0.2 + 1e-9)

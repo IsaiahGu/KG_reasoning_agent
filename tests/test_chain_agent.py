@@ -1,14 +1,14 @@
-"""Offline tests of the repaired loop with a fake retriever and a fake LLM client (no model, no HTTP)."""
+"""Offline tests of the chain with a fake retriever and a fake LLM client (no model, no HTTP)."""
 import json
 from pathlib import Path
 from types import SimpleNamespace
 
 import numpy as np
 
-from hyperbind.binding_scorer import FEATURE_NAMES, BindingScorer, hop_groups, selection_report
-from hyperbind.chain_agent import ChainAgent, ChainConfig, Hit, candidate_schema, musique_labeler
-from hyperbind.llm import LocalLLMClient
-from hyperbind.textmatch import clean_answer, contains, same_answer
+from supportchain.binding_scorer import FEATURE_NAMES, BindingScorer, hop_groups, selection_report
+from supportchain.chain_agent import ChainAgent, ChainConfig, Hit, candidate_schema, musique_labeler
+from supportchain.llm import LocalLLMClient
+from supportchain.textmatch import clean_answer, contains, same_answer
 
 ROOT = Path(__file__).resolve().parents[1]
 DOCS = ['Green (album)\nGreen is an album by Steve Hillage.', 'Steve Hillage\nSteve Hillage is married to Miquette Giraudy.',
@@ -117,7 +117,7 @@ def test_text_matching():
 
 
 def test_request_bytes_keep_declared_schema_order_and_order_is_part_of_the_cache_key(tmp_path, monkeypatch):
-    import hyperbind.llm as llm
+    import supportchain.llm as llm
     sent = []
 
     class Response:

@@ -4,8 +4,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from hyperbind.data import record_id
-from hyperbind.splits import (archive_existing_splits, build_arena_a, build_corpus,
+from supportchain.data import record_id
+from supportchain.splits import (archive_existing_splits, build_arena_a, build_corpus,
                              construct_splits, largest_remainder)
 
 
@@ -45,7 +45,7 @@ class StratifiedSplitTests(unittest.TestCase):
             (root / 'reports').mkdir()
             original = {'created_utc': 'original', 'datasets': {'musique': {'keep': 'unchanged'}},
                         'future_field': {'preserve': True}}
-            (root / 'reports/p0_splits.json').write_text(json.dumps(original))
+            (root / 'reports/splits.json').write_text(json.dumps(original))
             # Empty requested dataset list exercises report merge without touching any source data.
             result = build_arena_a(root, {'seed': 42, 'sizes': {'dev-A': 4}}, datasets=[])
             self.assertEqual(result['datasets'], original['datasets'])
@@ -55,7 +55,7 @@ class StratifiedSplitTests(unittest.TestCase):
     def test_history_keeps_checksums_and_refuses_overwrite(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            paths = ['data/splits/seed42/hotpotqa/dev-A.json', 'reports/p0_splits.json', 'runs/p0_splits/manifest.json']
+            paths = ['data/splits/seed42/hotpotqa/dev-A.json', 'reports/splits.json', 'runs/splits/manifest.json']
             for path in paths:
                 target = root / path
                 target.parent.mkdir(parents=True, exist_ok=True)

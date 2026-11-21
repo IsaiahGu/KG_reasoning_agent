@@ -1,8 +1,8 @@
-"""Answer support across derivations and the plan memory's neighbour selection (no GPU, no model)."""
+"""Answer support across executions and the plan memory's neighbour selection (no GPU, no model)."""
 import numpy as np
 
-from hyperbind.chain_agent import PlanPool
-from hyperbind.support import FEATURES, SupportModel, answer_groups, chain_features, merge
+from supportchain.chain_agent import PlanPool
+from supportchain.support import FEATURES, SupportModel, answer_groups, chain_features, merge
 
 
 def record(answer='Paris', chain='Paris', complete=True, hops=('Where was X born?', 'What is the capital of #1?')):
@@ -26,10 +26,10 @@ def test_answers_are_grouped_by_token_match_and_empty_answers_are_ignored():
     assert answer_groups(['Paris', 'paris.', '', 'Lyon']) == [[0, 1], [3]]
 
 
-def test_two_weaker_derivations_that_agree_beat_one_stronger_derivation():
+def test_two_weaker_executions_that_agree_beat_one_stronger_execution():
     index, support, distinct = merge(['Lyon', 'Paris', 'Paris'], [0.6, 0.5, 0.5])
     assert index in (1, 2) and abs(support - 0.75) < 1e-9 and distinct == 2
-    assert merge(['Lyon', 'Paris'], [0.6, 0.5])[0] == 0  # without agreement the more reliable derivation wins
+    assert merge(['Lyon', 'Paris'], [0.6, 0.5])[0] == 0  # without agreement the more reliable execution wins
     assert merge(['', ''], [0.2, 0.9]) == (1, 0.0, 0)
 
 

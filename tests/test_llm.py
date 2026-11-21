@@ -3,7 +3,7 @@ from urllib.error import HTTPError
 
 import pytest
 
-from hyperbind.llm import LocalLLMClient, LLMError, StructuredOutputError, api_controller_for_run, summarize_calls, verify_default_thinking_off
+from supportchain.llm import LocalLLMClient, LLMError, StructuredOutputError, summarize_calls, verify_default_thinking_off
 
 
 SCHEMA = {"type": "object", "properties": {"value": {"type": "integer"}},
@@ -46,7 +46,7 @@ def test_default_off_and_per_request_override_have_separate_cache(tmp_path):
     assert summary["completion_tokens_generated"] == 10 and summary["prompt_tokens_generated"] == 14
 
 
-def test_r2_probe_omits_kwargs_and_bypasses_cache(tmp_path):
+def test_default_thinking_check_omits_kwargs_and_bypasses_cache(tmp_path):
     transport = Transport(content="2")
     reader = client(tmp_path, transport)
     assert verify_default_thinking_off(reader)["status"] == "passed"
@@ -56,7 +56,7 @@ def test_r2_probe_omits_kwargs_and_bypasses_cache(tmp_path):
 
 
 @pytest.mark.parametrize("content,reasoning", [("<think>2</think>2", None), ("2", "hidden reasoning")])
-def test_r2_rejects_reasoning(tmp_path, content, reasoning):
+def test_default_thinking_check_rejects_reasoning(tmp_path, content, reasoning):
     with pytest.raises(AssertionError):
         verify_default_thinking_off(client(tmp_path, Transport(content=content, reasoning=reasoning)))
 
@@ -120,22 +120,6 @@ def test_nonlocal_or_secret_bearing_endpoint_is_rejected(tmp_path):
         LocalLLMClient(base_url="http://user:secret@127.0.0.1/v1", cache_dir=tmp_path, log_path=tmp_path / "calls")
 
 
-def test_api_controller_is_explicit_lazy_and_omits_vllm_fields(tmp_path, monkeypatch):
-    secret, endpoint = "mock-api-key-never-log", "https://api.example.invalid/v1"
-    monkeypatch.setenv("OPENAI_API_KEY", secret)
-    monkeypatch.setenv("OPENAI_BASE_URL", endpoint)
-    monkeypatch.setenv("HYPERBIND_API_MODEL", "gpt-4o-mini")
-    transport = Transport(content="Response includes " + secret + " at " + endpoint)
-    reader = api_controller_for_run(tmp_path, tmp_path / "run", transport=transport)
-    assert transport.posts == []
-    result = reader.complete(MESSAGES)
-    assert "chat_template_kwargs" not in transport.posts[0]
-    assert transport.posts[0]["model"] == "gpt-4o-mini"
-    assert secret not in result.content and endpoint not in result.content
-    for path in tmp_path.rglob("*.json*"):
-        assert secret not in path.read_text() and endpoint not in path.read_text()
-
-
 def test_remote_key_is_redacted_even_from_exception_text(tmp_path, monkeypatch):
     secret = "mock-api-secret-in-an-error"
     monkeypatch.setenv("KEY_NAME", secret)
@@ -148,10 +132,3 @@ def test_remote_key_is_redacted_even_from_exception_text(tmp_path, monkeypatch):
         reader.complete(MESSAGES)
     assert secret not in str(caught.value)
     assert secret not in (tmp_path / "calls.jsonl").read_text()
-
-
-def test_api_controller_factory_requires_env_and_planned_model(tmp_path, monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
-    with pytest.raises(ValueError):
-        api_controller_for_run(tmp_path, tmp_path / "run")

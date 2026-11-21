@@ -5,10 +5,10 @@ import unittest
 
 import numpy as np
 
-from hyperbind.calibrate_dense import rank
-from hyperbind.hipporag_upstream import gold_function, query_instruction, recall_metric, score_normalizer
+from supportchain.calibrate_dense import rank
+from supportchain.hipporag_upstream import gold_function, query_instruction, recall_metric, score_normalizer
 
-ROOT = Path(os.environ.get('HYPERBIND_ROOT', '/workspace/hg_reasoning_agent'))
+ROOT = Path(os.environ.get('SUPPORTCHAIN_ROOT', Path(__file__).resolve().parents[1]))
 
 
 class RetrievalSemantics(unittest.TestCase):

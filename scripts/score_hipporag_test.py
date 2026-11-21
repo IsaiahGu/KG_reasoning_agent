@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Score the same-reader HippoRAG 2 baseline on a test subset in run_chain's scored.json format. CPU only.
 
-Reads runs/b2_test/<dataset>/predictions.json (written by `python -m hyperbind.baseline_hipporag --split test --phase run`)
+Reads runs/b2_test/<dataset>/predictions.json (written by `python -m supportchain.baseline_hipporag --split test --phase run`)
 and the phase reports next to it; nothing is rerun. The saved answers are scored with the same upstream metric as every
 other run. Writes runs/chain/test/<dataset>/b2_hipporag2/{scored.json,summary.json}; the summary also carries the LLM
 cost of indexing (OpenIE) and of answering, for the cost table.
@@ -15,9 +15,9 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.baseline_dense import score_answers  # noqa: E402
-from hyperbind.data import load_test_samples  # noqa: E402
-from hyperbind.textmatch import clean_answer  # noqa: E402
+from supportchain.baseline_dense import score_answers  # noqa: E402
+from supportchain.data import load_test_samples  # noqa: E402
+from supportchain.textmatch import clean_answer  # noqa: E402
 
 
 def main():
@@ -46,7 +46,7 @@ def main():
     folder.mkdir(parents=True, exist_ok=True)
     recall = [len(set(example.gold_documents) & set(rows[example.id].get('documents') or [])) / len(example.gold_documents)
               for example in examples if example.gold_documents]
-    summary = {'system': 'HippoRAG 2 (official code), same reader and embedder (baseline B2)', 'dataset': arguments.dataset,
+    summary = {'system': 'HippoRAG 2 (official code), same reader and embedder', 'dataset': arguments.dataset,
                'split': 'test', 'requested': len(examples), 'scored': len(examples), 'errors': 0,
                'f1': round(100 * float(np.mean([row['f1'] for row in upstream])), 2),
                'em': round(100 * float(np.mean([row['em'] for row in upstream])), 2),

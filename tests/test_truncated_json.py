@@ -3,7 +3,7 @@ import hashlib
 import json
 import unittest
 
-from hyperbind.truncated_json import recover_triple_prefix
+from supportchain.truncated_json import recover_triple_prefix
 
 
 class TriplePrefixTests(unittest.TestCase):

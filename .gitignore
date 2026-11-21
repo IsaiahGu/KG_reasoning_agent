@@ -1,15 +1,11 @@
-/*
-!/.gitignore
-!/README.md
-!/src/
-!/scripts/
-!/probe/
-!/tests/
-!/configs/
-!/preparation/
-/preparation/*
-!/preparation/*.py
-!/preparation/*.sh
+# Large or local resources: models, datasets, environments, the upstream checkout, run outputs and caches.
+models/
+data/
+envs/
+external/
+hf_cache/
+runs/
+reports/
 __pycache__/
-*.py[cod]
+*.pyc
 .pytest_cache/

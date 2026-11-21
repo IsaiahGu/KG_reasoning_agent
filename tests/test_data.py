@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from hyperbind.data import (Document, candidate_documents, deduplicate_documents, get_gold_docs,
+from supportchain.data import (Document, candidate_documents, deduplicate_documents, get_gold_docs,
                             load_samples, normalize_record, official_record, record_stratum)
 
 

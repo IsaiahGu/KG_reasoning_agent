@@ -1,11 +1,11 @@
 #!/usr/bin/env python
-"""Control for the merge rule: the reader itself picks among the answers of the final method's derivations.
+"""Control for the merge rule: the reader itself picks among the answers of the full method's executions.
 
-Nothing is rerun. The derivations of the final method (configs/final.json) are read from their finished runs. On a
+Nothing is rerun. The four executions of the full method are read from their finished runs. On a
 question where they give more than one distinct answer, the reader sees the question and, for every distinct answer, the
 attempts that reached it (a chain: each hop with its answer and the sentence it quoted; the dense read: a note that it
 read the top passages in one go) and returns the number of the answer it judges best supported. Questions on which all
-derivations agree need no call. No gold field is read while choosing; the scores are those of the chosen derivation.
+executions agree need no call. No gold field is read while choosing; the scores are those of the chosen execution.
 
 Writes runs/chain/<split>/<dataset>/<tag>/{records.jsonl,scored.json,summary.json,llm_calls.jsonl}.
 """
@@ -23,8 +23,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.llm import StructuredOutputError, client_for_run  # noqa: E402
-from hyperbind.support import answer_groups  # noqa: E402
+from supportchain.llm import StructuredOutputError, client_for_run  # noqa: E402
+from supportchain.support import answer_groups  # noqa: E402
 
 SYSTEM = (
     'Several attempts answered the same question and they disagree. Each candidate answer is listed with the attempts that '
@@ -33,6 +33,10 @@ SYSTEM = (
     'Decide which candidate answer is best supported: the steps must follow the question, every step must be backed by its '
     'quote, and a step marked "likely", a missing quote or an attempt marked "incomplete" is weaker evidence. '
     'Return JSON with two fields in this order. reason: one or two sentences. choice: the number of the best candidate.')
+
+
+# The executions of the full method and the run tags that hold them: dense read, single execution, plan executions 1 and 2.
+FULL_METHOD = {'dense': 'a0', 'fixed': 'single', 'memory1': 'selfmem_answer', 'memory2': 'selfmem2_answer'}
 
 
 def schema(count):
@@ -53,7 +57,7 @@ def load(split, dataset, tag):
 
 
 def describe(record):
-    """What one derivation did, from its record. No gold field is read."""
+    """What one execution did, from its record. No gold field is read."""
     if not record.get('steps'):
         return 'read the top passages retrieved for the whole question in one go (no steps)'
     lines = ['worked step by step' + ('' if record.get('complete') else ' (incomplete: the plan could not be finished)')]
@@ -91,9 +95,8 @@ def main():
     parser.add_argument('--base-url', default='http://127.0.0.1:18080/v1')
     parser.add_argument('--dry-run', action='store_true', help='print the first prompts and the number of calls needed; no LLM call')
     arguments = parser.parse_args()
-    config = json.loads((ROOT / 'configs/final.json').read_text())
-    final = config['final']
-    runs = {name: load(arguments.split, arguments.dataset, config['derivations'][name]) for name in final}
+    final = list(FULL_METHOD)
+    runs = {name: load(arguments.split, arguments.dataset, FULL_METHOD[name]) for name in final}
     keys = sorted(set.intersection(*[set(scored) & set(records) for scored, records in runs.values()]))
     keys = keys[:arguments.limit] if arguments.limit else keys
     fallback = 'fixed' if 'fixed' in final else final[0]
@@ -129,7 +132,7 @@ def main():
                    'order': None, 'choice': None, 'source': final[groups[0][0]] if groups else fallback, 'reason': None,
                    'usage': {'calls': 0, 'prompt_tokens': 0, 'completion_tokens': 0, 'structured_failures': 0}}
             if len(groups) > 1:
-                order = list(range(len(groups)))  # a fixed pseudo-random order per question, so that no derivation is always first
+                order = list(range(len(groups)))  # a fixed pseudo-random order per question, so that no execution is always first
                 random.Random(int(hashlib.sha256(str(key).encode('utf-8')).hexdigest()[:8], 16)).shuffle(order)
                 row['order'], row['source'] = order, fallback
                 messages = [{'role': 'system', 'content': SYSTEM},
@@ -141,7 +144,7 @@ def main():
                                         completion_tokens=int(result.usage.get('completion_tokens', 0) or 0))
                     position = order[int(result.parsed['choice']) - 1]
                     row.update(choice=position, source=final[groups[position][0]], reason=result.parsed.get('reason'))
-                except StructuredOutputError:  # counted; the question keeps chain A1's answer
+                except StructuredOutputError:  # counted; the question keeps the single execution's answer
                     row['usage']['structured_failures'] = 1
         except Exception as error:  # recorded, not hidden; a rerun resumes the failed questions
             row = {'id': key, 'error': repr(error)}

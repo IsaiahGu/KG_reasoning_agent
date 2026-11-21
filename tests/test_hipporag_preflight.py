@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from hipporag.information_extraction.openie_openai import OpenIE
-from hyperbind.hipporag_preflight import AuditedOpenIE, PromptLengthError, summarize_audit
+from supportchain.hipporag_preflight import AuditedOpenIE, PromptLengthError, summarize_audit
 
 
 class Backend:
@@ -60,7 +60,7 @@ class AuditTests(unittest.TestCase):
         self.assertEqual(summary['parse_errors'],0)
 
     def test_object_without_entity_list_is_kept_empty_up_to_the_limit(self):
-        from hyperbind.hipporag_preflight import UNPARSED_NER_LIMIT
+        from supportchain.hipporag_preflight import UNPARSED_NER_LIMIT
         backend=Backend(json.dumps({'title':'A film','awards':{'count':7}}))
         openie=AuditedOpenIE(backend,audit_path=self.path)
         for index in range(UNPARSED_NER_LIMIT):
@@ -121,7 +121,7 @@ class AuditTests(unittest.TestCase):
     def test_native_success_never_uses_prefix_fallback(self):
         for finish in ('stop','length'):
             raw='{"triples":[["Alice","born in","Paris"]]}'
-            with patch('hyperbind.hipporag_preflight.recover_triple_prefix',side_effect=AssertionError('must not run')):
+            with patch('supportchain.hipporag_preflight.recover_triple_prefix',side_effect=AssertionError('must not run')):
                 native=OpenIE(Backend(raw,finish=finish)).triple_extraction('doc','text',['Alice'])
                 result=AuditedOpenIE(Backend(raw,finish=finish),audit_path=self.path).triple_extraction('doc','text',['Alice'])
             self.assertEqual(result.triples,native.triples)
@@ -140,7 +140,7 @@ class AuditTests(unittest.TestCase):
 
     def test_fallback_native_filter_rejection_preserves_original_failure(self):
         raw='{"triples":[["A","r","B"],["John, Jr.'
-        with patch('hyperbind.hipporag_preflight.filter_invalid_triples',side_effect=TypeError('bad complete value')):
+        with patch('supportchain.hipporag_preflight.filter_invalid_triples',side_effect=TypeError('bad complete value')):
             result=AuditedOpenIE(Backend(raw,finish='length'),audit_path=self.path).triple_extraction('doc','text',['A'])
         self.assertIn('error',result.metadata)
         self.assertEqual(result.triples,[])

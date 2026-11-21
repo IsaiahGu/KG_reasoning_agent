@@ -20,7 +20,7 @@ frozenlist==1.8.0
 fsspec==2024.6.1
 h11==0.16.0
 hf-xet==1.8.0
--e file:///workspace/hg_reasoning_agent/external/HippoRAG
+-e ./external/HippoRAG
 httpcore==1.0.9
 httpcore2==2.16.1
 httpx==0.28.1

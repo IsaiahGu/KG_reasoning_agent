@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-"""Build a plan memory from the agent's own plans on train-S questions (no decomposition annotation). CPU only.
+"""Build a plan memory from the chain's own plans on train-S questions (no decomposition annotation). CPU only.
 
-A plan is admitted when its derivation looks sound:
-  --admit answer   the derivation's answer matches the training answer (F1 >= threshold, default 0.8)
-  --admit support  the reliability model, fitted on the other folds, gives the derivation >= threshold (default 0.7);
+A plan is admitted when its execution looks sound:
+  --admit answer   the execution's answer matches the training answer (F1 >= threshold, default 0.8)
+  --admit support  the reliability model, fitted on the other folds, gives the execution >= threshold (default 0.7);
                    answers are used only to fit that model, so the same rule can admit plans for unlabeled questions
 Output: JSON list of {"id", "hops", "score"} for scripts/run_chain.py --plan knn --plan-cases <file>.
 """
@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
 sys.path.insert(0, str(ROOT / 'scripts'))
 from fit_support_model import load  # noqa: E402
-from hyperbind.support import SupportModel, chain_features  # noqa: E402
+from supportchain.support import SupportModel, chain_features  # noqa: E402
 
 
 def main():
@@ -55,7 +55,7 @@ def main():
     arguments.out.parent.mkdir(parents=True, exist_ok=True)
     arguments.out.write_text(json.dumps(cases, ensure_ascii=False) + '\n')
     lengths = collections.Counter(len(case['hops']) for case in cases)
-    print('%d plans admitted out of %d complete derivations (rule %s >= %.2f); %.1f%% of them have a right answer' % (
+    print('%d plans admitted out of %d complete executions (rule %s >= %.2f); %.1f%% of them have a right answer' % (
         len(cases), considered, arguments.admit, threshold, 100 * np.mean([case['right'] for case in cases])))
     print('by plan length: ' + ', '.join('%d hops: %d' % item for item in sorted(lengths.items())))
     print('by gold hop count: ' + ', '.join('%s: %d' % item for item in sorted(collections.Counter(case['stratum'] for case in cases).items())))

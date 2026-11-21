@@ -12,7 +12,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.binding_scorer import FEATURE_SETS, BindingScorer, hop_groups, selection_report  # noqa: E402
+from supportchain.binding_scorer import FEATURE_SETS, BindingScorer, hop_groups, selection_report  # noqa: E402
 
 
 def span(text):

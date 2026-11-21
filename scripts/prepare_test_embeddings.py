@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 """NV-Embed-v2 vectors for one more test subset of the HippoRAG 2 suite (NQ, PopQA), through the embedding service.
 
-Writes the same files the P0 calibration wrote for the three multi-hop subsets, so SplitRetriever(split='test')
-reads them unchanged: runs/p0/calibration/<dataset>/{passages,queries}.f16.npy with their progress files.
+Writes the same files calibrate_dense.py writes for the three multi-hop subsets, so SplitRetriever(split='test')
+reads them unchanged: runs/test_vectors/<dataset>/{passages,queries}.f16.npy with their progress files.
 Passages are title + newline + text in corpus order; questions in file order. Resumable. No LLM call.
 """
 import argparse
@@ -17,8 +17,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.calibrate_dense import fetch, save  # noqa: E402
-from hyperbind.data import dataset_name, load_corpus, load_test_samples  # noqa: E402
+from supportchain.calibrate_dense import fetch, save  # noqa: E402
+from supportchain.data import dataset_name, load_corpus, load_test_samples  # noqa: E402
 
 
 def encode(texts, path, kind, endpoint, settings, revision, batch_size):
@@ -57,13 +57,13 @@ def main():
     arguments = parser.parse_args()
     root, dataset = arguments.root.resolve(), dataset_name(arguments.dataset)
     health = fetch(arguments.endpoint + '/health')
-    reference = json.loads((root / 'runs/p0/calibration/musique/passages.f16.progress.json').read_text())
+    reference = json.loads((root / 'runs/test_vectors/musique/passages.f16.progress.json').read_text())
     settings = dict(health['settings'], batch_size=reference['settings']['batch_size'])
     if health['status'] != 'ready' or settings != reference['settings']:
         raise ValueError('The embedding service differs from the one that made the existing test vectors')
     corpus = load_corpus(root / 'data/hipporag2' / (dataset + '_corpus.json'))
     examples = load_test_samples(root, dataset)
-    output = root / 'runs/p0/calibration' / dataset
+    output = root / 'runs/test_vectors' / dataset
     output.mkdir(parents=True, exist_ok=True)
     encode([document.content for document in corpus], output / 'passages.f16.npy', 'passage', arguments.endpoint, settings,
            reference['model_revision'], arguments.batch_size)

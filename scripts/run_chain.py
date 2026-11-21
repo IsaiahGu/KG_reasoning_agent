@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run the repaired chain agent (or the A0 dense reader) on one split. Results stay on the server.
+"""Run the quote-bound chain (or the dense read) on one split. Writes runs/chain/<split>/<dataset>/<tag>/.
 
 Examples:
   run_chain.py --dataset musique --split train-S --limit 30 --tag smoke
@@ -19,10 +19,10 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.baseline_dense import score_answers  # noqa: E402
-from hyperbind.binding_scorer import BindingScorer  # noqa: E402
-from hyperbind.chain_agent import ChainAgent, ChainConfig, PlanPool, SplitRetriever, musique_labeler  # noqa: E402
-from hyperbind.llm import client_for_run  # noqa: E402
+from supportchain.baseline_dense import score_answers  # noqa: E402
+from supportchain.binding_scorer import BindingScorer  # noqa: E402
+from supportchain.chain_agent import ChainAgent, ChainConfig, PlanPool, SplitRetriever, musique_labeler  # noqa: E402
+from supportchain.llm import client_for_run  # noqa: E402
 
 
 def interval(values, seed=0, rounds=10000):
@@ -101,7 +101,7 @@ def main():
     parser.add_argument('--plan-neighbours', type=int, default=6)
     parser.add_argument('--plan-skip', type=int, default=0, help='skip the nearest N plan examples (a second, different plan)')
     parser.add_argument('--plan-cases', type=Path,
-                        help='plan memory built from the agent\'s own plans (scripts/build_plan_memory.py) instead of gold plans')
+                        help='plan memory built from the chain\'s own plans (scripts/build_plan_memory.py) instead of gold plans')
     parser.add_argument('--plan-dataset', help='take the plan memory from another dataset\'s train-S (transfer to a dataset without one)')
     parser.add_argument('--plan-loo', action='store_true',
                         help='train-S only: the pool may contain the evaluated questions; each question skips its own plan')
@@ -175,7 +175,7 @@ def main():
          for key, row in scored.items()]) + '\n')
     print(json.dumps(summary, indent=2))
     if summary.get('errors') or summary.get('scored') != summary.get('requested'):
-        # Failed questions are kept out of the scores; a rerun resumes exactly those. The queue runner retries on this code.
+        # Failed questions are kept out of the scores; a rerun resumes exactly those.
         sys.exit(3)
 
 

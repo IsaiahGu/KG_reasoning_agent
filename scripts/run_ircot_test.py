@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """IRCoT with our reader and embedder on a HippoRAG 2 test subset (same-reader baseline for the paper).
 
-The loop is the development-phase baseline B3 unchanged (src/hyperbind/baseline_ircot.py: upstream IRCoT prompts and
+The loop is the development-set IRCoT baseline unchanged (src/supportchain/baseline_ircot.py: upstream IRCoT prompts and
 reasoning helper, at most four retrieval rounds of five passages, upstream reader prompt over the five best passages);
 only the retriever is pointed at the test corpus. Needs the LLM and the embedding service. Writes
 runs/chain/test/<dataset>/b3_ircot/{records.jsonl,per_question.json,scored.json,summary.json}; scored.json has the
@@ -18,12 +18,12 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from hyperbind.baseline_dense import READER_GENERATION, RetrievedDocument, score_answers  # noqa: E402
-from hyperbind.baseline_ircot import predict_ircot  # noqa: E402
-from hyperbind.chain_agent import SplitRetriever  # noqa: E402
-from hyperbind.hipporag_upstream import score_normalizer  # noqa: E402
-from hyperbind.llm import client_for_run  # noqa: E402
-from hyperbind.textmatch import clean_answer  # noqa: E402
+from supportchain.baseline_dense import READER_GENERATION, RetrievedDocument, score_answers  # noqa: E402
+from supportchain.baseline_ircot import predict_ircot  # noqa: E402
+from supportchain.chain_agent import SplitRetriever  # noqa: E402
+from supportchain.hipporag_upstream import score_normalizer  # noqa: E402
+from supportchain.llm import client_for_run  # noqa: E402
+from supportchain.textmatch import clean_answer  # noqa: E402
 
 
 class TestRetriever:
@@ -82,7 +82,7 @@ def main():
         scored.append({'id': example.id, 'stratum': example.stratum, 'f1': a['f1'], 'em': a['em'], 'clean_f1': b['f1'],
                        'clean_em': b['em'], 'complete': False, 'calls': record['calls'], 'tokens': record['tokens']})
     errors = sum(record['status'] == 'error' for record in records)
-    summary = {'system': 'IRCoT, same reader and embedder (baseline B3)', 'dataset': arguments.dataset, 'split': 'test',
+    summary = {'system': 'IRCoT, same reader and embedder', 'dataset': arguments.dataset, 'split': 'test',
                'requested': len(examples), 'scored': len(scored), 'errors': errors, 'max_retrieval_steps': arguments.max_steps,
                'f1': round(100 * float(np.mean([row['f1'] for row in scored])), 2),
                'em': round(100 * float(np.mean([row['em'] for row in scored])), 2),
@@ -92,7 +92,7 @@ def main():
                'tokens_per_question': round(float(np.mean([row['tokens'] for row in scored])))}
     (output / 'per_question.json').write_text(json.dumps(records, ensure_ascii=False) + '\n', encoding='utf-8')
     (output / 'summary.json').write_text(json.dumps(summary, indent=1) + '\n')
-    if not errors and not arguments.limit:  # the queue checks this file: it is written only for a complete, clean run
+    if not errors and not arguments.limit:  # written only for a complete, clean run
         (output / 'scored.json').write_text(json.dumps(scored) + '\n')
     print(json.dumps(summary))
     if errors:

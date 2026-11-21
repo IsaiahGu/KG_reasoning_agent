@@ -1,52 +1,128 @@
-# Multi-hop question answering with reliability-weighted reasoning chains
+# SupportChain
 
-A question can have a well-supported answer even when several attempts to solve it disagree. This architecture generates candidate answers in two ways: a reader answers directly from retrieved passages, and a planner breaks the question into hops that the reader solves in sequence. Two additional chains can draw on a memory of successful plans. Each chain leaves an evidence trace that a small model uses to estimate how much support to give its answer.
+Code for **SupportChain: Trace-Calibrated Aggregation of Quote-Grounded Reasoning Chains for Multi-Hop RAG with Small Readers**.
+
+SupportChain answers multi-hop questions with a 9B reader and plain dense retrieval, without building an index:
+
+1. **Quote-bound chain.** The reader splits the question into single-hop sub-questions. Each hop retrieves passages and
+   binds its answer to a sentence quoted from one of them. A final reader (HippoRAG 2's reading prompt, unchanged) sees
+   passages and the hop notes.
+2. **Trace reliability.** A logistic regression over features of the execution trace (completion and agreement, quote
+   evidence, retrieval scores, plan shape) estimates whether an execution is right. It calls no LLM.
+3. **Support merging.** Executions that reach the same answer are pooled by noisy-OR,
+   `S(a) = 1 - prod_{e in G(a)} (1 - r(e))`, and the answer of the most reliable execution in the best group is returned.
+   Executions can be added only while support is below a threshold.
+
+The **full method** merges four executions: the dense read, the single execution (fixed plan examples), and two plan
+executions whose plan examples come from a memory of the chain's own right plans on training questions.
 
 ![Figure 2. On a HotpotQA question, a two-hop chain quotes evidence for Gabriella Montez. Two memory-guided chains and the direct reader support that answer, giving it a pooled support of 0.998.](docs/images/fig2-overview.png)
 
-## Following a chain of evidence
+## Results
 
-For a question such as “In which country was the director of *Spirited Away* born?”, the planner can produce two hops: “Who directed *Spirited Away*?” and “In which country was #1 born?” The retriever finds passages for the first hop. The model extracts an intermediate answer and a supporting quotation, then substitutes that answer for `#1` before the second retrieval. A final reader receives the original question, selected passages, and notes from the chain.
+Test F1 under the HippoRAG 2 protocol (1,000 questions per dataset), every system with Qwen3.5-9B and NV-Embed-v2:
 
-NV-Embed-v2 embeds the retrieval queries. A shared Qwen3.5-9B model plans the hops, extracts intermediate answers, and reads the evidence. Both base models have fixed weights. The direct path skips planning and reads the five passages retrieved for the original question. [Chain execution and direct reader](src/hyperbind/chain_agent.py)
+| System | MuSiQue | 2Wiki | HotpotQA | NQ | PopQA |
+|---|---|---|---|---|---|
+| Dense read (top 5) | 40.7 | 55.4 | 75.0 | 58.0 | 55.7 |
+| IRCoT | 43.5 | 59.7 | 75.6 | - | - |
+| HippoRAG 2 | 45.8 | 72.3 | 74.7 | 58.4 | 55.8 |
+| Single execution | 59.8 | 78.2 | 76.5 | 59.8 | 57.4 |
+| **Full method** | 63.0 | 78.6 | 78.0 | 61.4 | 57.4 |
+| On demand | 62.9 | 78.2 | 77.8 | 62.1 | 57.5 |
 
-## Executions used by SupportChain
+`scripts/evaluate.py` recomputes these numbers, the merge-rule comparison, the support-threshold curve and the
+reliability-model analyses from the run records.
 
-The full method in the main results table merges the four executions below by calibrated support.
+## Repository layout
 
-| Path | How it constructs the answer |
-| --- | --- |
-| Direct reader (`a0`) | Read passages retrieved with the original question. |
-| Fixed-example chain (`single`) | Plan from a fixed set of examples, then retrieve and answer one hop at a time. |
-| First memory-guided chain (`selfmem_answer`) | Retrieve similar training questions by embedding similarity and use their successful plans as examples. Execute the new plan against the passage corpus. |
-| Second memory-guided chain (`selfmem2_answer`) | Use a memory expanded with successful plans from the first memory-guided round. Execute the resulting plan with the same retriever and reader. |
-
-Planning memory stores examples of **how to decompose a question**. During construction, the answer-based admission rule keeps completed training chains with valid plans whose answers meet an F1 threshold (0.8 by default). At inference, the planner receives the retrieved questions and their hop sequences. [Memory construction](scripts/build_plan_memory.py) · [Four-path configuration](configs/final.json)
-
-## Ablations and comparisons
-
-| Experiment | What changes |
-| --- | --- |
-| Execution ablation | Keep support merging and remove executions. For example, “Single + 2 plans” omits the dense read from the full method. |
-| Execution-source comparison | Replace the two memory-guided executions with two sampled executions of the fixed-example chain. The appendix reports this comparison both with and without the dense read. |
-| Merge-rule comparison | Give each rule the same execution outputs. Compare calibrated support with majority vote, the most reliable execution, and the reader choosing an answer. |
-| Inference-cost comparison | The full method runs all four executions. The on-demand variant runs the two memory-guided executions only when the dense read and the fixed-example chain disagree. |
-
-The configuration file records when the four-execution reference was selected for reporting. [Configuration](configs/final.json) · [Evaluation](scripts/paper_results.py) · [Paper tables](scripts/paper_data.py)
-
-## Selecting the final answer
-
-A logistic regression assigns each chain a reliability score from its execution trace. Its inputs include whether the chain finished, whether the chain and the final reader agreed, whether a quotation appeared verbatim in a passage, and how highly the evidence ranked. The direct reader receives a dataset-specific prior. The fitted coefficients and normalization parameters are included in the repository. [Reliability model](src/hyperbind/support.py) · [Fitted parameters](configs/support)
-
-The selector groups matching answers. For a group with reliability scores *p₁, …, pₙ*, its support is **1 − ∏ᵢ(1 − pᵢ)**. For example, two paths supporting the same answer with scores 0.6 and 0.5 give it a group score of 0.8. If another answer has a single supporting path scored at 0.7, the first answer wins. The selector returns the answer text from the most reliable path in the winning group. [Answer matching](src/hyperbind/textmatch.py) · [Grouping and selection](src/hyperbind/support.py)
-
-## Running a single chain
-
-From a prepared Linux workspace with the dataset split, passage embeddings, and model services available, run:
-
-```bash
-PYTHONPATH=src envs/main/bin/python scripts/run_chain.py \
-  --dataset musique --split test --tag single --candidates 1
+```
+src/supportchain/
+  chain_agent.py        quote-bound chain, dense read, plan memory (PlanPool)
+  support.py            reliability features, logistic model, support merging
+  textmatch.py          answer normalisation and matching
+  binding_scorer.py     hop-candidate features; learned hop scorer (chain variant)
+  llm.py                cached, logged client for the local OpenAI-compatible reader
+  data.py, splits.py    datasets and the development/training splits
+  embedding_service.py, nv_adapter.py, prepare_*_embeddings.py, calibrate_dense.py   NV-Embed-v2 vectors
+  baseline_dense.py, baseline_ircot.py, baseline_hipporag.py, hipporag_*.py         same-reader baselines
+scripts/
+  run_chain.py          one run (chain or dense read) on one split
+  fit_support_model.py  fit the reliability model on train-S runs
+  build_plan_memory.py  build a plan memory from the chain's own right plans
+  run_llm_selector.py   control: the reader picks among the candidate answers
+  run_ircot_test.py, score_hipporag_test.py, prepare_test_embeddings.py
+  fit_binding_scorer.py fit the learned hop scorer (chain variant)
+  evaluate.py           all merged results and analyses, CPU only
+  run_experiments.sh    every experiment of the paper, stage by stage
+  serve_local_llm.sh    vLLM server for the reader
+  analysis/             root causes and binding errors on MuSiQue development questions
+configs/
+  support/              fitted reliability models (MuSiQue, 2Wiki, HotpotQA; NQ and PopQA use HotpotQA's)
+  plan_memory/          plan memories, rounds 1 and 2, per multi-hop dataset
+  scorers/              fitted hop scorer (chain variant)
+  models.json           model revisions; splits.json split settings; env/ exact environments
+tests/                  offline unit tests (no model, no GPU)
 ```
 
-This command exercises the fixed-example chain. The runner records the plan, hop evidence, intermediate answers, and final reader output. [Chain runner](scripts/run_chain.py) · [Environment and data preparation](preparation)
+## Setup
+
+The experiments ran on one GPU with three Python 3.12 environments, listed exactly in `configs/env/`:
+
+- `envs/main`: chain runs, fitting and evaluation (`numpy`, `jsonschema`, `filelock`, `pyarrow`).
+- `envs/embed`: NV-Embed-v2 and the HippoRAG 2 baseline (`configs/env/embed.lock`, plus HippoRAG installed editable).
+- `envs/serve`: vLLM 0.17.1 for the reader.
+
+External resources, placed under the repository root:
+
+| Path | Source |
+|---|---|
+| `external/HippoRAG` | https://github.com/OSU-NLP-Group/HippoRAG at commit `d5c8329422e0a0b834a15874545cb6a74b4f9b26` (prompts, scorer and the baseline; used unmodified) |
+| `models/Qwen/Qwen3.5-9B` | Hugging Face `Qwen/Qwen3.5-9B`, revision in `configs/models.json` |
+| `models/nvidia/NV-Embed-v2` | Hugging Face `nvidia/NV-Embed-v2`, revision in `configs/models.json` |
+| `data/hipporag2/<dataset>.json`, `<dataset>_corpus.json` | Hugging Face dataset `osunlp/HippoRAG_2` (musique, 2wikimultihopqa, hotpotqa, nq_rear, popqa) |
+| `data/raw/musique/extracted/data/musique_ans_v1.0_train.jsonl` | MuSiQue training set |
+| `data/raw/2wikimultihop/extracted/train.json` | 2WikiMultiHopQA training set |
+| `data/raw/hotpotqa/distractor/*.parquet` | Hugging Face dataset `hotpotqa/hotpot_qa`, distractor training split |
+
+Services: the reader on `127.0.0.1:18080` and the embedding service on `127.0.0.1:18081`.
+
+```bash
+scripts/serve_local_llm.sh &                                       # reader, thinking off, greedy by default
+PYTHONPATH=src envs/embed/bin/python -m supportchain.embedding_service &
+```
+
+## Running
+
+```bash
+scripts/run_experiments.sh prepare     # splits (seed 42) and NV-Embed-v2 vectors
+scripts/run_experiments.sh fit         # train-S runs, reliability models, plan memories
+scripts/run_experiments.sh dev         # dev-A runs and baselines
+scripts/run_experiments.sh test        # the four executions, resampled executions, reader-picks control
+scripts/run_experiments.sh baselines   # IRCoT and HippoRAG 2 with the same reader and embedder
+scripts/run_experiments.sh variants    # chain design variants
+scripts/run_experiments.sh evaluate    # every table: python scripts/evaluate.py --split test --refit
+```
+
+The fitted reliability models and the plan memories of the paper are included, so `fit` can be skipped; refitting on the
+same training runs gives the same weights. A single run looks like this:
+
+```bash
+PYTHONPATH=src envs/main/bin/python scripts/run_chain.py --dataset musique --split test --tag single --candidates 1
+```
+
+Each run writes `runs/chain/<split>/<dataset>/<tag>/` with `records.jsonl` (plan, hops, quotes, final answer and usage
+per question), `scored.json` and `summary.json`. Every LLM call is cached under `runs/cache/llm`, so a repeated command
+reproduces its outputs. No gold field is read while answering; gold labels only score the saved records.
+
+## Where each result comes from
+
+| Paper | Runs | Output of `scripts/evaluate.py` |
+|---|---|---|
+| Section 5: main results and cost | `a0`, `single`, `selfmem_answer`, `selfmem2_answer`, baselines | `main`, `threshold_curve` |
+| Section 6.1: how to merge | the above, `sc07_*`, `llm_select` | `merge_rules`, `all_merge_comparisons` |
+| Section 6.2: the reliability model | train-S `single_fit`, `a0_fit` (MuSiQue also `cand3_fit_reader`) | `reliability`, `reliability_refit` (`--refit`) |
+| Section 6.2 and appendix: where executions come from | `sc07_*`, `sc03_*` | `sources` |
+| Section 6.3: chain design | `ctx_notes`, `ctx_passages`, `khop4`, `cand3`, `knn_single`, `cand3_s1500_bt` | `chain_variants` |
+| Appendix: development results | dev-A runs | run with `--split dev-A` |
+| Appendix: root causes of binding errors | MuSiQue dev-A `single` | `scripts/analysis/root_cause.py`, `binding_errors.py` |

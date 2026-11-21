@@ -5,9 +5,9 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from hyperbind import baseline_dense
-from hyperbind.baseline_dense import DenseRetriever
-from hyperbind.llm import file_sha256
+from supportchain import baseline_dense
+from supportchain.baseline_dense import DenseRetriever
+from supportchain.llm import file_sha256
 
 
 @pytest.fixture
@@ -22,7 +22,7 @@ def artifacts(tmp_path, monkeypatch):
     monkeypatch.setattr(baseline_dense, "dev_examples", lambda *args, **kwargs: examples)
     monkeypatch.setattr(baseline_dense, "query_instruction", lambda root: "Expected query instruction.")
     monkeypatch.setattr(baseline_dense, "score_normalizer", lambda root: lambda values: values)
-    folder = tmp_path / "runs/p0_dev/embeddings" / dataset
+    folder = tmp_path / "runs/dev/embeddings" / dataset
     folder.mkdir(parents=True)
     passage_vectors = np.zeros((2, 4096), dtype=np.float16)
     passage_vectors[0, 0], passage_vectors[1, 1] = 1, 1
@@ -43,8 +43,8 @@ def artifacts(tmp_path, monkeypatch):
         "files_sha256": {name: file_sha256(folder / name) for name in ["passages.f16.npy", "queries_dev-A.f16.npy"]},
     }
     (folder / "metadata.json").write_text(json.dumps(metadata))
-    (tmp_path / "reports").mkdir()
-    (tmp_path / "reports/model_inventory.json").write_text(json.dumps([{"repo_id": "nvidia/NV-Embed-v2", "revision": "r1"}]))
+    (tmp_path / "configs").mkdir()
+    (tmp_path / "configs/models.json").write_text(json.dumps([{"repo_id": "nvidia/NV-Embed-v2", "revision": "r1"}]))
     return tmp_path, folder, metadata
 
 
